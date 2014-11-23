@@ -160,6 +160,12 @@ def parse_term(symbs, term_str):
 ((u, v, w),
  triangle_bspline_basis_uvw) = parse_source_polynomials_to_sympy()
 
+# Use `u` for the first coordinate and `v` for the second.
+# (Stam uses `v` and `w` respectively.)
+triangle_bspline_basis_uvw = triangle_bspline_basis_uvw.subs(
+    {v : u, w : v, u : w}, simultaneous=True)
+
+# Eliminate `w = 1 - u - v`.
 # `triangle_bspline_basis_uv`.
 triangle_bspline_basis_uv = triangle_bspline_basis_uvw.subs(
     {w : 1 - u - v}).expand()
