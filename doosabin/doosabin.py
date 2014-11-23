@@ -6,7 +6,9 @@ import numpy as np
 # Doo-Sabin Subdivision Matrix and Evaluation Functions
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
-# g
+# Setting `g` at the module level allows manipulation of the underlying numeric
+# type used for the Doo-Sabin weights, matrices, and basis functions.
+# e.g. `g` can be replaced with the sympy module.
 class g(object):
     cos = np.cos
     pi = np.pi
