@@ -7,8 +7,8 @@ import numpy as np
 
 # doosabin_weights
 def doosabin_weights(N):
-    assert N >= 3
-    # Calculate the weights
+    if N < 3:
+        raise ValueError('N < 3 (= %d)' % N)
     i = np.arange(N)
     weights = (3 + 2 * np.cos(2 * np.pi * i / N)) / (4 * N)
     weights[0] = (N + 5.0)/(4.0 *N)
@@ -16,7 +16,8 @@ def doosabin_weights(N):
 
 # extended_subdivision_matrix
 def extended_subdivision_matrix(N):
-    assert N >= 3
+    if N < 3:
+        raise ValueError('N < 3 (= %d)' % N)
     a = doosabin_weights(N)
     c, d, e, _ = doosabin_weights(4)
     A = []
@@ -33,7 +34,8 @@ def extended_subdivision_matrix(N):
 
 # bigger_subdivision_matrix
 def bigger_subdivision_matrix(N):
-    assert N >= 3
+    if N < 3:
+        raise ValueError('N < 3 (= %d)' % N)
     c, d, e, _ = doosabin_weights(4)
     return np.r_['0,2',
         extended_subdivision_matrix(N),
@@ -108,7 +110,7 @@ def uniform_quadratic_bspline_position_basis(u, k):
     elif k == 2:
         return 0.5 * (u**2)
     else:
-        raise ValueError
+        raise ValueError('k not in {0, 1, 2} (= %d)' % k)
 
 # uniform_quadratic_bspline_first_derivative_basis
 def uniform_quadratic_bspline_first_derivative_basis(u, k):
@@ -120,7 +122,7 @@ def uniform_quadratic_bspline_first_derivative_basis(u, k):
     elif k == 2:
         return u
     else:
-        raise ValueError
+        raise ValueError('k not in {0, 1, 2} (= %d)' % k)
 
 # uniform_quadratic_bspline_second_derivative_basis
 def uniform_quadratic_bspline_second_derivative_basis(u, k):
@@ -132,7 +134,7 @@ def uniform_quadratic_bspline_second_derivative_basis(u, k):
     elif k == 2:
         return 1.0
     else:
-        raise ValueError
+        raise ValueError('k not in {0, 1, 2} (= %d)' % k)
 
 # biquadratic_bspline_basis
 BIQUADRATIC_BSPLINE_BASIS_M = [1, 1, 0, 0, 0, 1, 2, 2, 2]
