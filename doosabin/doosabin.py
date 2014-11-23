@@ -112,23 +112,21 @@ def recursive_evaluate(p, b, N, u, X):
 
 # uniform_quadratic_bspline_position_basis
 def uniform_quadratic_bspline_position_basis(u, k):
-    u = np.atleast_1d(u)
     if k == 0:
-        return 0.5 * (1 - u)**2
+        return g.Rational(1, 2) * (1 - u)**2
     elif k == 1:
-        return -(u**2) + u + 0.5
+        return -(u**2) + u + g.Rational(1, 2)
     elif k == 2:
-        return 0.5 * (u**2)
+        return g.Rational(1, 2) * (u**2)
     else:
         raise ValueError('k not in {0, 1, 2} (= %d)' % k)
 
 # uniform_quadratic_bspline_first_derivative_basis
 def uniform_quadratic_bspline_first_derivative_basis(u, k):
-    u = np.atleast_1d(u)
     if k == 0:
         return - (1 - u)
     elif k == 1:
-        return -2.0 * u + 1
+        return -2 * u + 1
     elif k == 2:
         return u
     else:
@@ -136,32 +134,32 @@ def uniform_quadratic_bspline_first_derivative_basis(u, k):
 
 # uniform_quadratic_bspline_second_derivative_basis
 def uniform_quadratic_bspline_second_derivative_basis(u, k):
-    u = np.atleast_1d(u)
     if k == 0:
-        return 1.0
+        return 1
     elif k == 1:
-        return -2.0
+        return -2
     elif k == 2:
-        return 1.0
+        return 1
     else:
         raise ValueError('k not in {0, 1, 2} (= %d)' % k)
 
-# biquadratic_bspline_basis
+# biquadratic_bspline_basis_i
 BIQUADRATIC_BSPLINE_BASIS_M = [1, 1, 0, 0, 0, 1, 2, 2, 2]
 BIQUADRATIC_BSPLINE_BASIS_N = [1, 0, 0, 1, 2, 2, 2, 1, 0]
-def _biquadratic_bspline_basis_i(f, g, U, i):
-    U = np.atleast_2d(U)
-    return (f(U[:, 0], BIQUADRATIC_BSPLINE_BASIS_M[i]) *
-            g(U[:, 1], BIQUADRATIC_BSPLINE_BASIS_N[i]))
+def biquadratic_bspline_basis_i(f, g, u, v, i):
+    return (f(u, BIQUADRATIC_BSPLINE_BASIS_M[i]) *
+            g(v, BIQUADRATIC_BSPLINE_BASIS_N[i]))
 
+# biquadratic_bspline_basis
+NUM_BIQUADRATIC_BSPLINE_BASIS = 9
 def biquadratic_bspline_basis(f, g=None, func_name=None):
     if g is None:
         g = f
     def basis_function(U):
-        U = np.atleast_2d(U)
-        B = np.empty((U.shape[0], 9), dtype=np.float64)
-        for i in range(9):
-            B[:, i] = _biquadratic_bspline_basis_i(f, g, U, i)
+        u, v = np.atleast_2d(U).T
+        B = np.empty((len(u), NUM_BIQUADRATIC_BSPLINE_BASIS), dtype=np.float64)
+        for i in range(NUM_BIQUADRATIC_BSPLINE_BASIS):
+            B[:, i] = biquadratic_bspline_basis_i(f, g, u, v, i)
         return B
 
     if func_name is not None:
