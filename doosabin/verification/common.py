@@ -5,6 +5,8 @@ import numpy as np
 
 # example_extraordinary_patch
 def example_extraordinary_patch(N):
+    if N < 3:
+        raise ValueError('N < 3 (= %d)' % N)
     t = np.linspace(0, -2 * np.pi, N, endpoint=False)
     X = np.c_[np.cos(t), np.sin(t)]
 
