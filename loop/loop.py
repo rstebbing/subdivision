@@ -201,8 +201,8 @@ def recursive_evaluate(p, b, N, u, X):
         x = np.dot(x, np.dot(A_, P3))
     return np.dot(x, np.dot(A_, X))
 
-# sympy_exprs_to_function
-def sympy_exprs_to_function(exprs, func_name=None):
+# exprs_to_basis
+def exprs_to_basis(exprs, func_name=None):
     bs = [sympy_polynomial_to_function(e, (u, v)) for e in exprs]
     def basis_function(U):
         u, v = np.atleast_2d(U).T
@@ -216,33 +216,33 @@ def sympy_exprs_to_function(exprs, func_name=None):
     return basis_function
 
 # triangle_bspline_position_basis
-triangle_bspline_position_basis = sympy_exprs_to_function(
+triangle_bspline_position_basis = exprs_to_basis(
     triangle_bspline_basis_uv,
     'triangle_bspline_position_basis')
 
 # triangle_bspline_du_basis
 def Du(b): return [sp.diff(f, u) for f in b]
-triangle_bspline_du_basis = sympy_exprs_to_function(
+triangle_bspline_du_basis = exprs_to_basis(
     Du(triangle_bspline_basis_uv),
     'triangle_bspline_du_basis')
 
 # triangle_bspline_dv_basis
 def Dv(b): return [sp.diff(f, v) for f in b]
-triangle_bspline_dv_basis = sympy_exprs_to_function(
+triangle_bspline_dv_basis = exprs_to_basis(
     Dv(triangle_bspline_basis_uv),
     'triangle_bspline_dv_basis')
 
 # triangle_bspline_du_du_basis
-triangle_bspline_du_du_basis = sympy_exprs_to_function(
+triangle_bspline_du_du_basis = exprs_to_basis(
     Du(Du(triangle_bspline_basis_uv)),
     'triangle_bspline_du_du_basis')
 
 # triangle_bspline_du_dv_basis
-triangle_bspline_du_dv_basis = sympy_exprs_to_function(
+triangle_bspline_du_dv_basis = exprs_to_basis(
     Dv(Du(triangle_bspline_basis_uv)),
     'triangle_bspline_du_dv_basis')
 
 # triangle_bspline_dv_dv_basis
-triangle_bspline_dv_dv_basis = sympy_exprs_to_function(
+triangle_bspline_dv_dv_basis = exprs_to_basis(
     Dv(Dv(triangle_bspline_basis_uv)),
     'triangle_bspline_dv_dv_basis')
