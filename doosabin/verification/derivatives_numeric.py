@@ -4,8 +4,13 @@
 import argparse
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 import doosabin
 from common import example_extraordinary_patch
+
+# Requires common/python on `PYTHONPATH`.
+from matplotlib_ import label_xaxis
 
 # main
 def main():
@@ -21,19 +26,37 @@ def main():
     np.random.seed(1337)
     X += 0.1 * np.random.randn(X.size).reshape(X.shape)
 
-    # Evaluate with basis functions for small `u`.
+    # Evaluate with basis functions for small `u` with `v = 0`.
     powers_and_basis_functions = [
         (1, doosabin.biquadratic_bspline_du_basis),
         (2, doosabin.biquadratic_bspline_du_du_basis)]
     u = 2.0 ** (-np.arange(1, args.n + 1))
     U = np.c_[u, [0.0] * u.size]
 
-    for p, b in powers_and_basis_functions:
+    f, axs = plt.subplots(2, 1)
+
+    for ax, (p, b) in zip(axs, powers_and_basis_functions):
         print '%s:' % b.func_name
+
+        norms = []
         for u in U:
             q = doosabin.recursive_evaluate(p, b, args.N, u, X)
+            n = np.linalg.norm(q)
+            norms.append(n)
+
             print '  (2^%d, %g) -> (%+.3e, %+.3e) <%.3e>' % (
-                np.around(np.log2(u[0])), u[1], q[0], q[1], np.linalg.norm(q))
+                np.around(np.log2(u[0])), u[1], q[0], q[1], n)
+
+        ax.plot(norms, 'o-')
+        for i, n in enumerate(norms):
+            ax.text(i, n, '$%.3e$' % n, horizontalalignment='center')
+        label_xaxis(ax, ['$2^{%d}$' % (-(i + 1)) for i in range(args.n)])
+        ax.set_yticks([])
+
+    axs[0].set_title(r'$N = %d\;|\partial u|$' % args.N)
+    axs[1].set_title(r'$N = %d\;|\partial u^2|$' % args.N)
+
+    plt.show()
 
 if __name__ == '__main__':
     main()

@@ -6,10 +6,15 @@ import numpy as np
 import sympy as sp
 from itertools import count
 
+import matplotlib.pyplot as plt
+
 import doosabin
 from common import example_extraordinary_patch
 
-# Use a symbolic backend for `doosabin`.
+# Requires common/python on `PYTHONPATH`.
+from matplotlib_ import label_xaxis
+
+# Use a Sympy as the backend for `doosabin`.
 doosabin.g = sp
 
 # Global symbols.
@@ -28,7 +33,7 @@ def recursive_evaluate_basis(p, b, N, k):
 # du_k_0
 def du_k_0(N):
     # `b` and `p` corresponding to `biquadratic_bspline_du_basis` for
-    # v = 0.
+    # `v = 0`.
     p = 1
     b = sp.Matrix([
         doosabin.biquadratic_bspline_basis_i(
@@ -63,7 +68,10 @@ def main():
 
     generators_and_subs = [('biquadratic_bspline_du_basis', du_k_0, {u : 1}),
                            ('biquadratic_bspline_du_du_basis', du_du_k_0, {})]
-    for name, g, subs in generators_and_subs:
+
+    f, axs = plt.subplots(2, 1)
+
+    for ax, (name, g, subs) in zip(axs, generators_and_subs):
         print '%s:' % name
 
         # Ignore first subdivision so that the reported results correspond with
@@ -72,11 +80,27 @@ def main():
         # `transform_u_to_subdivided_patch`).
         g = g(args.N)
         next(g)
+
+        norms = []
         for i in range(args.n):
             b = next(g).subs(subs)
             q = np.dot(map(np.float64, b), X)
+            n = np.linalg.norm(q)
+            norms.append(n)
+
             print '  (2^%d, 0) -> (%+.3e, %+.3e) <%.3e>' % (
-                -(i + 1), q[0], q[1], np.linalg.norm(q))
+                -(i + 1), q[0], q[1], n)
+
+        ax.plot(norms, 'o-')
+        for i, n in enumerate(norms):
+            ax.text(i, n, '$%.3e$' % n, horizontalalignment='center')
+        label_xaxis(ax, ['$2^{%d}$' % (-(i + 1)) for i in range(args.n)])
+        ax.set_yticks([])
+
+    axs[0].set_title(r'$|N = %d, \partial u|$' % args.N)
+    axs[1].set_title(r'$|N = %d, \partial u^2|$' % args.N)
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
