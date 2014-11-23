@@ -5,20 +5,29 @@ import numpy as np
 
 # Doo-Sabin Subdivision Matrix and Evaluation Functions
 
+# `g` is a namespace which provides `cos`, `pi` and `Rational`.
+# g
+class g(object):
+    cos = np.cos
+    pi = np.pi
+    @staticmethod
+    def Rational(a, b):
+        return float(a) / b
+
 # doosabin_weights
 def doosabin_weights(N):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
-    i = np.arange(N)
-    weights = (3 + 2 * np.cos(2 * np.pi * i / N)) / (4 * N)
-    weights[0] = (N + 5.0)/(4.0 *N)
+    weights = [(3 + 2 * g.cos(2 * g.pi * i / N)) / (4 * N)
+               for i in range(N)]
+    weights[0] = g.Rational(N + 5, 4 * N)
     return weights
 
 # extended_subdivision_matrix
 def extended_subdivision_matrix(N):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
-    a = list(doosabin_weights(N))
+    a = doosabin_weights(N)
     c, d, e, _ = doosabin_weights(4)
     A = []
     for i in range(N):
@@ -30,14 +39,14 @@ def extended_subdivision_matrix(N):
     A.append([c] + [0] * N + [d, e, d] + [0])
     A.append([c, d] + [0] * (N + 1) + [d, e])
     A.append([d, c] + [0] * (N + 1) + [e, d])
-    return np.array(A, dtype=np.float64)
+    return A
 
 # bigger_subdivision_matrix
 def bigger_subdivision_matrix(N):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
     c, d, e, _ = doosabin_weights(4)
-    A_ = extended_subdivision_matrix(N).tolist()
+    A_ = extended_subdivision_matrix(N)
     A_.append([e] + [0] * (N - 2) + [d, c, d] + [0] * 3)
     A_.append([d] + [0] * (N - 2) + [e, d, c] + [0] * 3)
     A_.append([d] + [0] * N + [c, d, e] + [0])
@@ -45,7 +54,7 @@ def bigger_subdivision_matrix(N):
     A_.append([d] + [0] * N + [e, d, c] + [0])
     A_.append([d, e] + [0] * (N + 1) + [c, d])
     A_.append([e, d] + [0] * (N + 1) + [d, c])
-    return np.array(A_, dtype=np.float64)
+    return A_
 
 # picker_matrix
 PICKING_INDICES = [
@@ -58,9 +67,9 @@ def picker_matrix(N, k):
     M = N + 12
     j = PICKING_INDICES[k](N)
     n = len(j)
-    P = np.zeros((n, M), dtype=np.float64)
+    P = [[0] * M for _ in range(n)]
     for i in range(n):
-        P[i, j[i]] = 1
+        P[i][j[i]] = 1
     return P
 
 # transform_u_to_subdivided_patch
