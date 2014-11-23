@@ -130,11 +130,29 @@ biquadratic_bspline_du_basis = biquadratic_bspline_basis(
     uniform_quadratic_bspline_position_basis,
     'biquadratic_bspline_du_basis')
 
+# biquadratic_bspline_dv_basis
+biquadratic_bspline_dv_basis = biquadratic_bspline_basis(
+    uniform_quadratic_bspline_position_basis,
+    uniform_quadratic_bspline_first_derivative_basis,
+    'biquadratic_bspline_dv_basis')
+
 # biquadratic_bspline_du_du_basis
 biquadratic_bspline_du_du_basis = biquadratic_bspline_basis(
     uniform_quadratic_bspline_second_derivative_basis,
     uniform_quadratic_bspline_position_basis,
     'biquadratic_bspline_du_du_basis')
+
+# biquadratic_bspline_du_dv_basis
+biquadratic_bspline_du_dv_basis = biquadratic_bspline_basis(
+    uniform_quadratic_bspline_first_derivative_basis,
+    uniform_quadratic_bspline_first_derivative_basis,
+    'biquadratic_bspline_du_dv_basis')
+
+# biquadratic_bspline_dv_dv_basis
+biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
+    uniform_quadratic_bspline_position_basis,
+    uniform_quadratic_bspline_second_derivative_basis,
+    'biquadratic_bspline_dv_dv_basis')
 
 # transform_u_to_required_depth
 def transform_u_to_required_depth(u):
