@@ -12,7 +12,7 @@ from common import example_extraordinary_patch
 # main
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('N', nargs='?', type=int, default=7)
+    parser.add_argument('N', nargs='?', type=int, default=6)
     parser.add_argument('n', nargs='?', type=int, default=2)
     parser.add_argument('m', nargs='?', type=int, default=21)
     args = parser.parse_args()

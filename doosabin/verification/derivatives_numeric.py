@@ -11,8 +11,8 @@ from common import example_extraordinary_patch
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('N', nargs='?', type=int, default=6)
-    parser.add_argument('start', nargs='?', type=int, default=16)
-    parser.add_argument('stop', nargs='?', type=int, default=24)
+    parser.add_argument('start', nargs='?', type=int, default=1)
+    parser.add_argument('stop', nargs='?', type=int, default=16)
     args = parser.parse_args()
 
     # Generate example extraordinary patch with an extraordinary face of `N`
