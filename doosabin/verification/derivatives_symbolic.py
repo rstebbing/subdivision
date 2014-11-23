@@ -57,13 +57,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('N', nargs='?', type=int, default=6)
     parser.add_argument('n', nargs='?', type=int, default=16)
+    parser.add_argument('--seed', type=int, default=1337)
     args = parser.parse_args()
 
     # Generate example extraordinary patch with an extraordinary face of `N`
     # sides.
     print 'N:', args.N
     X = example_extraordinary_patch(args.N)
-    np.random.seed(1337)
+    np.random.seed(args.seed)
     X += 0.1 * np.random.randn(X.size).reshape(X.shape)
 
     generators_and_subs = [('biquadratic_bspline_du_basis', du_k_0, {u : 1}),
