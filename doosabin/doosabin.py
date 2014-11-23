@@ -18,18 +18,18 @@ def doosabin_weights(N):
 def extended_subdivision_matrix(N):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
-    a = doosabin_weights(N)
+    a = list(doosabin_weights(N))
     c, d, e, _ = doosabin_weights(4)
     A = []
     for i in xrange(N):
-        r = np.roll(a, i).tolist()
-        r.extend([0.0] * 5)
+        r = a[-i:] + a[:-i]
+        r.extend([0] * 5)
         A.append(r)
-    A.append([d] + [0.0] * (N - 2) + [c, d, e] + [0.0] * 3)
-    A.append([c] + [0.0] * (N - 2) + [d, e, d] + [0.0] * 3)
-    A.append([c] + [0.0] * N + [d, e, d] + [0.0])
-    A.append([c, d] + [0.0] * (N + 1) + [d, e])
-    A.append([d, c] + [0.0] * (N + 1) + [e, d])
+    A.append([d] + [0] * (N - 2) + [c, d, e] + [0] * 3)
+    A.append([c] + [0] * (N - 2) + [d, e, d] + [0] * 3)
+    A.append([c] + [0] * N + [d, e, d] + [0])
+    A.append([c, d] + [0] * (N + 1) + [d, e])
+    A.append([d, c] + [0] * (N + 1) + [e, d])
     return np.array(A, dtype=np.float64)
 
 # bigger_subdivision_matrix
@@ -37,15 +37,15 @@ def bigger_subdivision_matrix(N):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
     c, d, e, _ = doosabin_weights(4)
-    return np.r_['0,2',
-        extended_subdivision_matrix(N),
-        [e] + [0.0] * (N - 2) + [d, c, d] + [0.0] * 3,
-        [d] + [0.0] * (N - 2) + [e, d, c] + [0.0] * 3,
-        [d] + [0.0] * N + [c, d, e] + [0.0],
-        [e] + [0.0] * N + [d, c, d] + [0.0],
-        [d] + [0.0] * N + [e, d, c] + [0.0],
-        [d, e] + [0.0] * (N + 1) + [c, d],
-        [e, d] + [0.0] * (N + 1) + [d, c]]
+    A_ = extended_subdivision_matrix(N).tolist()
+    A_.append([e] + [0] * (N - 2) + [d, c, d] + [0] * 3)
+    A_.append([d] + [0] * (N - 2) + [e, d, c] + [0] * 3)
+    A_.append([d] + [0] * N + [c, d, e] + [0])
+    A_.append([e] + [0] * N + [d, c, d] + [0])
+    A_.append([d] + [0] * N + [e, d, c] + [0])
+    A_.append([d, e] + [0] * (N + 1) + [c, d])
+    A_.append([e, d] + [0] * (N + 1) + [d, c])
+    return np.array(A_, dtype=np.float64)
 
 # picker_matrix
 PICKING_INDICES = [
