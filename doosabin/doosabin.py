@@ -95,15 +95,14 @@ def uniform_quadratic_bspline_second_derivative_basis(u, k):
     else:
         raise ValueError
 
-# biquadratic_bspline_basis_i
+# biquadratic_bspline_basis
 BIQUADRATIC_BSPLINE_BASIS_M = [1, 1, 0, 0, 0, 1, 2, 2, 2]
 BIQUADRATIC_BSPLINE_BASIS_N = [1, 0, 0, 1, 2, 2, 2, 1, 0]
-def biquadratic_bspline_basis_i(f, g, U, i):
+def _biquadratic_bspline_basis_i(f, g, U, i):
     U = np.atleast_2d(U)
     return (f(U[:, 0], BIQUADRATIC_BSPLINE_BASIS_M[i]) *
             g(U[:, 1], BIQUADRATIC_BSPLINE_BASIS_N[i]))
 
-# biquadratic_bspline_basis
 def biquadratic_bspline_basis(f, g=None, func_name=None):
     if g is None:
         g = f
@@ -111,7 +110,7 @@ def biquadratic_bspline_basis(f, g=None, func_name=None):
         U = np.atleast_2d(U)
         B = np.empty((U.shape[0], 9), dtype=np.float64)
         for i in xrange(9):
-            B[:, i] = biquadratic_bspline_basis_i(f, g, U, i)
+            B[:, i] = _biquadratic_bspline_basis_i(f, g, U, i)
         return B
 
     if func_name is not None:
