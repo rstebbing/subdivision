@@ -176,7 +176,6 @@ triangle_bspline_basis_uv = triangle_bspline_basis_uvw.subs(
 def transform_u_to_subdivided_patch(u):
     u = np.copy(u)
     n = int(np.floor(1.0 - np.log2(np.sum(u))))
-
     u *= 2**(n - 1)
     if u[0] > 0.5:
         k = 0
@@ -190,7 +189,6 @@ def transform_u_to_subdivided_patch(u):
         k = 1
         u[0] = 1 - 2 * u[0]
         u[1] = 1 - 2 * u[1]
-
     return n, k, u
 
 # recursive_evaluate
