@@ -25,7 +25,7 @@ def main():
     A = doosabin.extended_subdivision_matrix(args.N)
     A_ = doosabin.bigger_subdivision_matrix(args.N)
     Xs, Xs_ = [X], []
-    for i in xrange(args.n):
+    for i in range(args.n):
         Xi = Xs[-1]
         Xs.append(np.dot(A, Xi))
         Xs_.append(np.dot(A_, Xi))
