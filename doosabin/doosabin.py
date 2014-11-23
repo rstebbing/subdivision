@@ -3,7 +3,7 @@
 # Imports
 import numpy as np
 
-# Doo-Sabin Subdivision Matrix and Evaluation Functions
+# Doo-Sabin Subdivision Matrices
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
 # Setting `g` at the module level allows manipulation of the underlying numeric
@@ -74,40 +74,6 @@ def picker_matrix(N, k):
         P[i][j[i]] = 1
     return P
 
-# transform_u_to_subdivided_patch
-def transform_u_to_subdivided_patch(u):
-    u = np.copy(u)
-    n = int(np.floor(1.0 - np.log2(np.max(u))))
-    u *= 2**(n - 1)
-    if u[0] > 0.5:
-        if u[1] > 0.5:
-            k = 1
-            u[0] = 2 * u[0] - 1
-            u[1] = 2 * u[1] - 1
-        else:
-            k = 0
-            u[0] = 2 * u[0] - 1
-            u[1] = 2 * u[1]
-    else:
-        assert u[1] > 0.5
-        k = 2
-        u[0] = 2 * u[0]
-        u[1] = 2 * u[1] - 1
-    return n, k, u
-
-# recursive_evaluate
-def recursive_evaluate(p, b, N, u, X):
-    n, k, u = transform_u_to_subdivided_patch(u)
-    if N != 4:
-        assert n >= 1, 'n < 1 (= %d)' % n
-
-    A_ = bigger_subdivision_matrix(N)
-    P3 = picker_matrix(N, 3)
-    x = 2.0**(p * n) * np.dot(b(u).ravel(), picker_matrix(N, k))
-    for i in range(n - 1):
-        x = np.dot(x, np.dot(A_, P3))
-    return np.dot(x, np.dot(A_, X))
-
 # Basis Functions
 
 # uniform_quadratic_bspline_position_basis
@@ -149,6 +115,42 @@ BIQUADRATIC_BSPLINE_BASIS_N = [1, 0, 0, 1, 2, 2, 2, 1, 0]
 def biquadratic_bspline_basis_i(f, g, u, v, i):
     return (f(u, BIQUADRATIC_BSPLINE_BASIS_M[i]) *
             g(v, BIQUADRATIC_BSPLINE_BASIS_N[i]))
+
+# Evaluation Functions
+
+# transform_u_to_subdivided_patch
+def transform_u_to_subdivided_patch(u):
+    u = np.copy(u)
+    n = int(np.floor(1.0 - np.log2(np.max(u))))
+    u *= 2**(n - 1)
+    if u[0] > 0.5:
+        if u[1] > 0.5:
+            k = 1
+            u[0] = 2 * u[0] - 1
+            u[1] = 2 * u[1] - 1
+        else:
+            k = 0
+            u[0] = 2 * u[0] - 1
+            u[1] = 2 * u[1]
+    else:
+        assert u[1] > 0.5
+        k = 2
+        u[0] = 2 * u[0]
+        u[1] = 2 * u[1] - 1
+    return n, k, u
+
+# recursive_evaluate
+def recursive_evaluate(p, b, N, u, X):
+    n, k, u = transform_u_to_subdivided_patch(u)
+    if N != 4:
+        assert n >= 1, 'n < 1 (= %d)' % n
+
+    A_ = bigger_subdivision_matrix(N)
+    P3 = picker_matrix(N, 3)
+    x = 2.0**(p * n) * np.dot(b(u).ravel(), picker_matrix(N, k))
+    for i in range(n - 1):
+        x = np.dot(x, np.dot(A_, P3))
+    return np.dot(x, np.dot(A_, X))
 
 # biquadratic_bspline_basis
 NUM_BIQUADRATIC_BSPLINE_BASIS = 9
