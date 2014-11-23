@@ -25,14 +25,6 @@ def recursive_evaluate_basis(p, b, N, k):
             sp.Matrix(doosabin.picker_matrix(N, k)) * A_Anm1)
         A_Anm1 = A_ * P3 * A_Anm1
 
-# du_du_k_0
-def du_du_k_0(N):
-    # `b` and `p` corresponding to `biquadratic_bspline_du_du_basis`.
-    p = 2
-    h = sp.S.Half
-    b = sp.Matrix([-1, -1, h, h, 0, 0, 0, h, h])
-    return recursive_evaluate_basis(p, b, N, 0)
-
 # du_k_0
 def du_k_0(N):
     # `b` and `p` corresponding to `biquadratic_bspline_du_basis` for
@@ -45,6 +37,14 @@ def du_k_0(N):
             u, v, i)
          for i in range(doosabin.NUM_BIQUADRATIC_BSPLINE_BASIS)
         ]).subs({v : 0})
+    return recursive_evaluate_basis(p, b, N, 0)
+
+# du_du_k_0
+def du_du_k_0(N):
+    # `b` and `p` corresponding to `biquadratic_bspline_du_du_basis`.
+    p = 2
+    h = sp.S.Half
+    b = sp.Matrix([-1, -1, h, h, 0, 0, 0, h, h])
     return recursive_evaluate_basis(p, b, N, 0)
 
 # main
