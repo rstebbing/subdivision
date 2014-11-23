@@ -91,13 +91,10 @@ def recursive_evaluate(p, b, N, u, X):
 
     A_ = bigger_subdivision_matrix(N)
     P3 = picker_matrix(N, 3)
-    A_Anm1 = A_.copy()
+    x = 2.0**(p * n) * np.dot(b(u).ravel(), picker_matrix(N, k))
     for i in xrange(n - 1):
-        A_Anm1 = np.dot(A_, np.dot(P3, A_Anm1))
-
-    return np.dot((2.0**(p * n)) *
-        np.dot(b(u).ravel(),
-               np.dot(picker_matrix(N, k), A_Anm1)), X)
+        x = np.dot(x, np.dot(A_, P3))
+    return np.dot(x, np.dot(A_, X))
 
 # Basis Functions
 
