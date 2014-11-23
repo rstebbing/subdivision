@@ -21,7 +21,7 @@ def extended_subdivision_matrix(N):
     a = list(doosabin_weights(N))
     c, d, e, _ = doosabin_weights(4)
     A = []
-    for i in xrange(N):
+    for i in range(N):
         r = a[-i:] + a[:-i]
         r.extend([0] * 5)
         A.append(r)
@@ -59,7 +59,7 @@ def picker_matrix(N, k):
     j = PICKING_INDICES[k](N)
     n = len(j)
     P = np.zeros((n, M), dtype=np.float64)
-    for i in xrange(n):
+    for i in range(n):
         P[i, j[i]] = 1
     return P
 
@@ -82,7 +82,6 @@ def transform_u_to_subdivided_patch(u):
         k = 2
         u[0] = 2 * u[0]
         u[1] = 2 * u[1] - 1
-
     return n, k, u
 
 # recursive_evaluate
@@ -94,7 +93,7 @@ def recursive_evaluate(p, b, N, u, X):
     A_ = bigger_subdivision_matrix(N)
     P3 = picker_matrix(N, 3)
     x = 2.0**(p * n) * np.dot(b(u).ravel(), picker_matrix(N, k))
-    for i in xrange(n - 1):
+    for i in range(n - 1):
         x = np.dot(x, np.dot(A_, P3))
     return np.dot(x, np.dot(A_, X))
 
@@ -150,7 +149,7 @@ def biquadratic_bspline_basis(f, g=None, func_name=None):
     def basis_function(U):
         U = np.atleast_2d(U)
         B = np.empty((U.shape[0], 9), dtype=np.float64)
-        for i in xrange(9):
+        for i in range(9):
             B[:, i] = _biquadratic_bspline_basis_i(f, g, U, i)
         return B
 
