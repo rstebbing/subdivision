@@ -3,6 +3,8 @@
 # Imports
 import numpy as np
 
+# Doo-Sabin Subdivision Matrix and Evaluation Functions
+
 # doosabin_weights
 def doosabin_weights(N):
     assert N >= 3
@@ -58,6 +60,46 @@ def picker_matrix(N, k):
     for i in xrange(n):
         P[i, j[i]] = 1
     return P
+
+# transform_u_to_subdivided_patch
+def transform_u_to_subdivided_patch(u):
+    u = np.copy(u)
+    n = int(np.floor(1.0 - np.log2(np.max(u))))
+    u *= 2**(n - 1)
+    if u[0] > 0.5:
+        if u[1] > 0.5:
+            k = 1
+            u[0] = 2 * u[0] - 1
+            u[1] = 2 * u[1] - 1
+        else:
+            k = 0
+            u[0] = 2 * u[0] - 1
+            u[1] = 2 * u[1]
+    else:
+        assert u[1] > 0.5
+        k = 2
+        u[0] = 2 * u[0]
+        u[1] = 2 * u[1] - 1
+
+    return n, k, u
+
+# recursive_evaluate
+def recursive_evaluate(p, b, N, u, X):
+    n, k, u = transform_u_to_subdivided_patch(u)
+    if N != 4:
+        assert n >= 1, 'n < 1 (= %d)' % n
+
+    A_ = bigger_subdivision_matrix(N)
+    P3 = picker_matrix(N, 3)
+    A_Anm1 = A_.copy()
+    for i in xrange(n - 1):
+        A_Anm1 = np.dot(A_, np.dot(P3, A_Anm1))
+
+    return np.dot((2.0**(p * n)) *
+        np.dot(b(u).ravel(),
+               np.dot(picker_matrix(N, k), A_Anm1)), X)
+
+# Basis Functions
 
 # uniform_quadratic_bspline_position_basis
 def uniform_quadratic_bspline_position_basis(u, k):
@@ -152,48 +194,3 @@ biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
     uniform_quadratic_bspline_position_basis,
     uniform_quadratic_bspline_second_derivative_basis,
     'biquadratic_bspline_dv_dv_basis')
-
-# transform_u_to_required_depth
-def transform_u_to_required_depth(u):
-    u = np.copy(u)
-    n = int(np.floor(1.0 - np.log2(np.max(u))))
-    u *= 2**(n - 1)
-    if u[0] > 0.5:
-        if u[1] > 0.5:
-            k = 1
-            u[0] = 2 * u[0] - 1
-            u[1] = 2 * u[1] - 1
-        else:
-            k = 0
-            u[0] = 2 * u[0] - 1
-            u[1] = 2 * u[1]
-    else:
-        assert u[1] > 0.5
-        k = 2
-        u[0] = 2 * u[0]
-        u[1] = 2 * u[1] - 1
-
-    return n, k, u
-
-# recursive_evaluate
-def recursive_evaluate(b, N, u, X, p, verbose=False):
-    u0 = np.array(u)
-    n, k, u = transform_u_to_required_depth(u)
-    if N != 4:
-        assert n >= 1
-
-    if verbose:
-        print 'u = (%.4g, %.4g) -> n = %d, k = %d, u = (%.4g, %.4g)' % (
-            u0[0], u0[1], n, k, u[0], u[1])
-
-    A_ = bigger_subdivision_matrix(N)
-    P3 = picker_matrix(N, 3)
-    A_Anm1 = A_.copy()
-    for i in xrange(n - 1):
-        A_Anm1 = np.dot(A_, np.dot(P3, A_Anm1))
-
-    m = (2.0 ** p) ** n * np.dot(b(u)[0], np.dot(picker_matrix(N, k),
-                                                 A_Anm1))
-    if verbose:
-        print ' m = %s' % m
-    return np.dot(m, X)
