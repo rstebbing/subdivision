@@ -30,7 +30,8 @@ def du_du_k_0(N):
             sp.Matrix(doosabin.picker_matrix(N, k)) * A_Anm1)
         A_Anm1 = A_ * P3 * A_Anm1
 
-if __name__ == '__main__':
+# main
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('N', nargs='?', type=int, default=6)
     parser.add_argument('n', nargs='?', type=int, default=8)
@@ -61,3 +62,6 @@ if __name__ == '__main__':
     ax.set_title('|du_du|, N = %d' % args.N)
     ax.set_xlabel('n')
     plt.show()
+
+if __name__ == '__main__':
+    main()
