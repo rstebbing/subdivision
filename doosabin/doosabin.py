@@ -140,7 +140,7 @@ def transform_u_to_subdivided_patch(u):
     return n, k, u
 
 # recursive_evaluate
-def recursive_evaluate(p, b, N, u, X):
+def recursive_evaluate(p, b, N, u, X=None):
     n, k, u = transform_u_to_subdivided_patch(u)
     if N != 4:
         assert n >= 1, 'n < 1 (= %d)' % n
@@ -150,7 +150,8 @@ def recursive_evaluate(p, b, N, u, X):
     x = 2.0**(p * n) * np.dot(b(u).ravel(), picker_matrix(N, k))
     for i in range(n - 1):
         x = np.dot(x, np.dot(A_, P3))
-    return np.dot(x, np.dot(A_, X))
+    x = np.dot(x, A_)
+    return x if X is None else np.dot(x, X)
 
 # biquadratic_bspline_basis
 NUM_BIQUADRATIC_BSPLINE_BASIS = 9
