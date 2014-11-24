@@ -20,7 +20,6 @@ int main() {
 
   // doosabin::InternalPatch<double> patch(nullptr, 0, std::move(face_array));
   doosabin::Patch<double> patch(std::move(face_array));
-  patch.SubdivideChildren();
 
   Eigen::MatrixXd X(9, 2);
   X << 0, 0,
