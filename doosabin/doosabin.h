@@ -444,16 +444,14 @@ class Patch : public InternalPatch<Scalar> {
 
   template <typename TV>
   void SetVertices(const TV& V) {
-    _V0 = V;
     this->InvalidateVertices();
+    _V_is_valid = true;
+    _V = V;
   }
 
   const Matrix& Vertices() const {
-    return _V0;
+    return _V;
   }
-
-protected:
-  Matrix _V0;
 };
 
 } // namespace doosabin
