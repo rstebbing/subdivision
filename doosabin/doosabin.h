@@ -7,9 +7,10 @@
 #include <memory>
 #include <vector>
 
+#include "Eigen/Dense"
+
 // TODO Move these to common.
 #include "Mesh/face_array.h"
-#include "Math/linalg.h"
 #include "Math/modulo.h"
 
 #include "uniform_quadratic_bspline.h"
@@ -89,8 +90,8 @@ template <typename Scalar>
 class InternalPatch
 {
 public:
-  typedef typename linalg::Matrix<Scalar>::Type MatrixXf;
-  typedef typename linalg::Vector<Scalar>::Type VectorXf;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
 
   InternalPatch(const InternalPatch * parent, size_t depth,
                 FaceArray && face_array)
@@ -251,7 +252,7 @@ public:
     for (size_t i = 0; i < n_faces; ++i)
       n_child_vertices += _face_array.GetNumberOfSides(i);
 
-    MatrixXf S(n_child_vertices, _I.size());
+    Matrix S(n_child_vertices, _I.size());
     S.fill(0.0);
 
     // fill `S` using the Doo-Sabin subdivision weights
@@ -260,7 +261,7 @@ public:
     {
       // get subdivision weights of face `i` with `n` vertices
       const int n = _face_array.GetNumberOfSides(i);
-      VectorXf w;
+      Vector w;
       DooSabinWeights(n, &w);
 
       // get `face_indices_in_I`
@@ -458,7 +459,7 @@ public:
       child->InvalidateVertices();
   }
 
-  const MatrixXf & V()
+  const Matrix & V()
   {
     if (!_V_is_valid)
     {
@@ -495,8 +496,8 @@ protected:
   bool _is_valid;
 
   std::vector<std::unique_ptr<InternalPatch<Scalar>>> _children;
-  MatrixXf _S;
-  MatrixXf _V;
+  Matrix _S;
+  Matrix _V;
 };
 
 // Patch
@@ -519,13 +520,13 @@ public:
   }
 
   // Vertices
-  const MatrixXf & Vertices() const
+  const Matrix & Vertices() const
   {
     return _V0;
   }
 
 protected:
-  MatrixXf _V0;
+  Matrix _V0;
 };
 
 
