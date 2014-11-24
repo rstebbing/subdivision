@@ -27,6 +27,8 @@ template <typename Weights>
 void DooSabinWeights(int N, Weights* w) {
   typedef typename Weights::Scalar T;
 
+  assert(N >= 3);
+
   if (w->size() != N) {
     w->resize(N);
   }
