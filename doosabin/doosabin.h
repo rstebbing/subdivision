@@ -4,6 +4,7 @@
 
 // Includes
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -117,56 +118,52 @@ class InternalPatch
                     EvaluatePositionFunctor>(_u, r);
   }
 
-// FIXME Was `protected`.
-public:
+ protected:
   // Initialisation
-  void OrderPatch()
-  {
-    // determine the common vertex for all faces and store in `_i`
+  void OrderPatch() {
+    // Determine the common vertex `_i` for all faces and store in.
     _i = _face_array.FindCommonVertex();
     assert(_i >= 0);
 
-    // order the vertices in each face so that `_i` is the first vertex
-    // order the faces to also respect the vertex ordering
+    // Order the vertices in each face so that `_i` is the first vertex.
+    // Order the faces to also respect the vertex ordering.
     const size_t n_faces = _face_array.GetNumberOfFaces();
     size_t faces_remaining = n_faces;
 
     std::vector<size_t> ordered_face_indices;
     ordered_face_indices.reserve(n_faces);
 
-    // order first face
+    // Order first face.
     _face_array.RotateFaceToVertex(0, _i);
     ordered_face_indices.push_back(0);
 
-    while (--faces_remaining)
-    {
+    // Order remaining faces.
+    while (--faces_remaining) {
       size_t last_face_index = ordered_face_indices.back();
       int n = _face_array.GetNumberOfSides(last_face_index);
       auto p = _face_array.GetFace(last_face_index);
       const int last_vertex = p[n - 1];
 
-      // search for half-edge (`i`, `last_vertex`) to find `next_face_offset`
+      // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
       int next_face_index = -1;
 
-      for (size_t j = 0; j < n_faces; ++j)
-      {
+      for (size_t j = 0; j < n_faces; ++j) {
         n = _face_array.GetNumberOfSides(j);
         p = _face_array.GetFace(j);
 
-        for (int k = 0; k < n; ++k)
-        {
-          if (_i == p[k] && last_vertex == p[(k + 1) % n])
-          {
-            next_face_index = j;
+        for (int k = 0; k < n; ++k) {
+          if (_i == p[k] && last_vertex == p[(k + 1) % n]) {
+            next_face_index = static_cast<int>(j);
             break;
           }
         }
 
-        if (next_face_index >= 0)
+        if (next_face_index >= 0) {
           break;
+        }
       }
 
-      // unable to find half-edge
+      // Ensure the half edge was found.
       assert(next_face_index >= 0);
 
       _face_array.RotateFaceToVertex(next_face_index, _i);
@@ -176,13 +173,11 @@ public:
     _face_array.PermuteFaces(ordered_face_indices);
   }
 
-  void SetIsPatchValid()
-  {
-    const size_t n_faces = _face_array.GetNumberOfFaces();
-    for (size_t j = 0; j < n_faces; ++j)
-    {
-      if (_face_array.GetNumberOfSides(j) != 4)
-      {
+  void SetIsPatchValid() {
+    assert(_face_array.GetNumberOfFaces() == 4);
+
+    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
+      if (_face_array.GetNumberOfSides(j) != 4) {
         _is_valid = false;
         return;
       }
@@ -191,20 +186,17 @@ public:
     _is_valid = true;
   }
 
-  void SetPatchVertexIndices()
-  {
-    // initialise `_I`
+  void SetPatchVertexIndices() {
+    // Initialise `_I`.
     _I.push_back(_i);
 
-    const size_t n_faces = _face_array.GetNumberOfFaces();
-    for (size_t j = 0; j < n_faces; ++j)
-    {
+    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
       const int n = _face_array.GetNumberOfSides(j);
       auto p = _face_array.GetFace(j);
-      std::copy(p + 1, p + n - 1, back_inserter(_I));
+      std::copy(p + 1, p + n - 1, std::back_inserter(_I));
     }
 
-    // initialise `_S`
+    // Initialise `_S`.
     const int n = _I.size();
     _S.setIdentity(n, n);
   }
