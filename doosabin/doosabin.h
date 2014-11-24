@@ -56,9 +56,14 @@ const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
 // BiquadraticBsplineBasis
 template <typename F, typename G, typename U, typename B>
 inline void BiquadraticBsplineBasis(const U& u, B* b) {
+  if (b->size() != kNumBiquadraticBsplineBasis) {
+    b->resize(kNumBiquadraticBsplineBasis);
+  }
+
   static const F f;
   static const G g;
-  for (typename B::Index i = 0; i < b->size(); ++i) {
+
+  for (typename B::Index i = 0; i < kNumBiquadraticBsplineBasis; ++i) {
     (*b)[i] = f(u[0], kBiquadraticBsplineBasis[i][0]) *
               g(u[1], kBiquadraticBsplineBasis[i][1]);
   }
