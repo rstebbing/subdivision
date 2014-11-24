@@ -18,8 +18,8 @@
 // doosabin
 namespace doosabin {
 
+// Types.
 using face_array::FaceArray;
-
 using modulo::modulo;
 
 // DooSabinWeights
@@ -89,29 +89,32 @@ class Patch;
 template <typename Scalar>
 class InternalPatch
 {
-public:
+ public:
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+  typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
 
-  InternalPatch(const InternalPatch * parent, size_t depth,
-                FaceArray && face_array)
-    : _parent(parent), _depth(depth),
+  InternalPatch(const Patch<Scalar>* root,
+                const InternalPatch* parent,
+                size_t depth,
+                FaceArray&& face_array)
+    : _root(root),
+      _parent(parent),
+      _depth(depth),
       _face_array(std::move(face_array)),
-      _root(nullptr),
-      _V_is_valid(false)
-  {
+      _V_is_valid(false) {
     OrderPatch();
     SetIsPatchValid();
     SetPatchVertexIndices();
   }
 
   // EvaluatePosition
-  template <typename Tu, typename Tr>
-  void EvaluatePosition(Tu & u, Tr & r)
-  {
+  template <typename U, typename R>
+  void EvaluatePosition(const U& u, R* r) {
+    Vector2 _u(u);
     return Evaluate<uniform_quadratic_bspline::Position,
                     uniform_quadratic_bspline::Position,
-                    EvaluatePositionFunctor>(u, r);
+                    EvaluatePositionFunctor>(_u, r);
   }
 
 // FIXME Was `protected`.
@@ -316,11 +319,12 @@ public:
       child_face_permutation[3] = static_cast<size_t>(modulo(3 - i, 4));
       child_patch_array.PermuteFaces(child_face_permutation);
 
-      // build `child`
-      std::unique_ptr<InternalPatch<Scalar> > child(new InternalPatch<Scalar>(
-        this, _depth + 1, std::move(child_patch_array)));
-      // propagate root
-      child->_root = _root;
+      // build `child` and propagate `_root`.
+      std::unique_ptr<InternalPatch<Scalar>> child(new InternalPatch<Scalar>(
+        _root,
+        this,
+        _depth + 1,
+        std::move(child_patch_array)));
 
       // build `child._S` and move to `_children`
       child->_S.resize(child->_I.size(), S.cols());
@@ -440,23 +444,19 @@ public:
   }
 
   // EvaluatePosition
-  class EvaluatePositionFunctor
-  {
-  public:
-    template <typename Tb, typename Tr>
-    void operator()(InternalPatch<Scalar> & patch, const Tb & b, Tr & r) const
-    {
-      r.noalias() = patch.V() * b;
+  struct EvaluatePositionFunctor {
+    template <typename B, typename R>
+    void operator()(InternalPatch<Scalar>& patch, const B& b, R* r) const {
+      r->noalias() = patch.V() * b;
     }
   };
 
   // Evaluation
 protected:
-  const InternalPatch<Scalar> * _parent;
+  const Patch<Scalar>* _root;
+  const InternalPatch<Scalar>* _parent;
   size_t _depth;
   FaceArray _face_array;
-
-  const Patch<Scalar> * _root;
 
   bool _V_is_valid;
 
@@ -473,10 +473,9 @@ protected:
 template <typename Scalar>
 class Patch : public InternalPatch<Scalar>
 {
-public:
+ public:
   Patch(FaceArray && face_array)
-    : InternalPatch<Scalar>(nullptr, 0, std::move(face_array))
-  {
+    : InternalPatch<Scalar>(nullptr, nullptr, 0, std::move(face_array)) {
     this->_root = this;
   }
 
