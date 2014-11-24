@@ -62,10 +62,18 @@ def main():
 
     # Generate example extraordinary patch with an extraordinary face of `N`
     # sides.
+    # Use `seed < 0` to signal evaluating the linear weights only
+    # (i.e. `X = None`).
     print 'N:', args.N
-    X = example_extraordinary_patch(args.N)
-    np.random.seed(args.seed)
-    X += 0.1 * np.random.randn(X.size).reshape(X.shape)
+    print 'seed:', args.seed
+    if args.seed >= 0:
+        X = example_extraordinary_patch(args.N)
+        np.random.seed(args.seed)
+        X += 0.1 * np.random.randn(X.size).reshape(X.shape)
+        print 'X:', X.shape
+    else:
+        X = None
+        print 'X: None'
 
     generators_and_subs = [('biquadratic_bspline_du_basis', du_k_0, {u : 1}),
                            ('biquadratic_bspline_du_du_basis', du_du_k_0, {})]
@@ -85,12 +93,16 @@ def main():
         norms = []
         for i in range(args.n):
             b = next(g).subs(subs)
-            q = np.dot(map(np.float64, b), X)
+            q = map(np.float64, b)
+            if X is not None:
+                q = np.dot(q, X)
             n = np.linalg.norm(q)
             norms.append(n)
 
-            print '  (2^%d, 0) -> (%+.3e, %+.3e) <%.3e>' % (
-                -(i + 1), q[0], q[1], n)
+            print ('  (2^%d, 0) ->' % (-(i + 1))),
+            if X is not None:
+                print ('(%+.3e, %+.3e)' % (q[0], q[1])),
+            print '<%.3e>' % n
 
         ax.plot(norms, 'o-')
         for i, n in enumerate(norms):
