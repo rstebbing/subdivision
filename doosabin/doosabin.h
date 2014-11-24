@@ -37,15 +37,6 @@ void DooSabinWeights(int N, Weights* w) {
   (*w)[0] = T(N + 5) / (4 * N);
 }
 
-// TODO Remove the use of `ValencyNotFourException` and use `glog` instead.
-// ValencyNotFourException
-class ValencyNotFourException : public std::domain_error
-{
-public:
-  ValencyNotFourException() : std::domain_error("ValencyNotFourException")
-  {}
-};
-
 // MaxSubdivisionDepth
 const size_t MaxSubdivisionDepth = 10;
 
@@ -252,8 +243,7 @@ public:
       return;
 
     const size_t n_faces = _face_array.GetNumberOfFaces();
-    if (n_faces != 4)
-      throw ValencyNotFourException();
+    assert(n_faces == 4);
 
     // create `S` to include the all child vertices
     size_t n_child_vertices = 0;
