@@ -73,10 +73,10 @@ public:
 const size_t MaxSubdivisionDepth = 10;
 
 // ValidUOffsets
-const int ValidUOffsets[][2] = {{ 1, -1},
-                                { 1,  1},
+const int ValidUOffsets[][2] = {{-1, -1},
                                 {-1,  1},
-                                {-1, -1}};
+                                { 1,  1},
+                                { 1, -1}};
 
 // ValidUEpsilon
 const double ValidUEpsilon = 1e-6;
@@ -89,13 +89,13 @@ const size_t NumPatchControlVertices = 9;
 // PatchOrdering
 const int PatchOrdering[NumPatchControlVertices][2] = {{1, 1},
                                                        {1, 0},
-                                                       {2, 0},
-                                                       {2, 1},
-                                                       {2, 2},
-                                                       {1, 2},
-                                                       {0, 2},
+                                                       {0, 0},
                                                        {0, 1},
-                                                       {0, 0}};
+                                                       {0, 2},
+                                                       {1, 2},
+                                                       {2, 2},
+                                                       {2, 1},
+                                                       {2, 0}};
 
 // basis_vector
 template <typename FB0, typename FB1, typename Tu, typename Tb>
@@ -447,9 +447,6 @@ public:
   template <typename Tu>
   int PassToChild(Tu & u) const
   {
-    // split the domain into four quadrants
-    // labeling is 0, 1, 2, 3, starting lower right and going counter
-    // clockwise
     int child_index = -1;
 
     if (u[0] >= 0.5)
@@ -459,11 +456,11 @@ public:
       if (u[1] >= 0.5)
       {
         u[1] -= 0.5;
-        child_index = 1;
+        child_index = 2;
       }
       else
       {
-        child_index = 0;
+        child_index = 3;
       }
     }
     else
@@ -471,11 +468,11 @@ public:
       if (u[1] >= 0.5)
       {
         u[1] -= 0.5;
-        child_index = 2;
+        child_index = 1;
       }
       else
       {
-        child_index = 3;
+        child_index = 0;
       }
     }
 
