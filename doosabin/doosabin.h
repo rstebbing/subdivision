@@ -446,33 +446,25 @@ class InternalPatch
 
 // Patch
 template <typename Scalar>
-class Patch : public InternalPatch<Scalar>
-{
+class Patch : public InternalPatch<Scalar> {
  public:
   Patch(FaceArray && face_array)
-    : InternalPatch<Scalar>(nullptr, nullptr, 0, std::move(face_array)) {
-    this->_root = this;
-  }
+    : InternalPatch<Scalar>(this, nullptr, 0, std::move(face_array))
+  {}
 
-  // SetVertices
   template <typename TV>
-  void SetVertices(const TV & V)
-  {
+  void SetVertices(const TV & V) {
     _V0 = V;
     this->InvalidateVertices();
   }
 
-  // Vertices
-  const Matrix & Vertices() const
-  {
+  const Matrix & Vertices() const {
     return _V0;
   }
 
 protected:
   Matrix _V0;
 };
-
-
 
 } // namespace doosabin
 
