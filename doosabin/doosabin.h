@@ -39,18 +39,6 @@ void DooSabinWeights(int N, Weights* w) {
   (*w)[0] = T(N + 5) / (4 * N);
 }
 
-// MaxSubdivisionDepth
-const size_t MaxSubdivisionDepth = 10;
-
-// ValidUOffsets
-const int ValidUOffsets[][2] = {{-1, -1},
-                                {-1,  1},
-                                { 1,  1},
-                                { 1, -1}};
-
-// ValidUEpsilon
-const double ValidUEpsilon = 1e-6;
-
 // kNumBiquadraticBsplineBasis
 const size_t kNumBiquadraticBsplineBasis = 9;
 
@@ -75,6 +63,18 @@ inline void BiquadraticBsplineBasis(const U& u, B* b) {
               g(u[1], kBiquadraticBsplineBasis[i][1]);
   }
 }
+
+// kValidUOffsets
+static const int kValidUOffsets[][2] = {{-1, -1},
+                                        {-1,  1},
+                                        { 1,  1},
+                                        { 1, -1}};
+
+// kMaxSubdivisionDepth
+static const size_t kMaxSubdivisionDepth = 10;
+
+// kValidUEpsilon
+static const double kValidUEpsilon = 1e-6;
 
 // Patch (forward declaration)
 template <typename Scalar>
@@ -379,7 +379,7 @@ public:
 
     SubdivideChildren();
 
-    if (_depth == (MaxSubdivisionDepth - 1))
+    if (_depth == (kMaxSubdivisionDepth - 1))
     {
       // on second to last level of subdivision, adjust `U` so that it
       // falls within a valid patch
@@ -401,8 +401,8 @@ public:
       InternalPatch<Scalar> & child = *_children[i];
       if (child._is_valid)
       {
-        u[0] = 0.5 + ValidUOffsets[i][0] * Scalar(ValidUEpsilon);
-        u[1] = 0.5 + ValidUOffsets[i][1] * Scalar(ValidUEpsilon);
+        u[0] = 0.5 + kValidUOffsets[i][0] * Scalar(kValidUEpsilon);
+        u[1] = 0.5 + kValidUOffsets[i][1] * Scalar(kValidUEpsilon);
         return;
       }
     }
