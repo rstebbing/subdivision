@@ -103,9 +103,7 @@ class InternalPatch
       _depth(depth),
       _face_array(std::move(face_array)),
       _V_is_valid(false) {
-    OrderPatch();
-    SetIsPatchValid();
-    SetPatchVertexIndices();
+    Initialise();
   }
 
   // EvaluatePosition
@@ -117,13 +115,25 @@ class InternalPatch
   }
 
  protected:
-  // Initialisation
-  void OrderPatch() {
-    // Determine the common vertex `_i` for all faces and store in.
-    _i = _face_array.FindCommonVertex();
-    assert(_i >= 0);
+  // Initialise
+  void Initialise() {
+    // Set `_is_valid`.
+    assert(_face_array.GetNumberOfFaces() == 4);
+    _is_valid = true;
+    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
+      if (_face_array.GetNumberOfSides(j) != 4) {
+        _is_valid = false;
+        break;
+      }
+    }
 
-    // Order the vertices in each face so that `_i` is the first vertex.
+    // Reorder the vertex indices and face ordering in `_face_array`.
+
+    // Determine the common vertex `_i` for all faces and store in.
+    const int i = _face_array.FindCommonVertex();
+    assert(i >= 0);
+
+    // Order the vertices in each face so that `i` is the first vertex.
     // Order the faces to also respect the vertex ordering.
     const size_t n_faces = _face_array.GetNumberOfFaces();
     size_t faces_remaining = n_faces;
@@ -132,7 +142,7 @@ class InternalPatch
     ordered_face_indices.reserve(n_faces);
 
     // Order first face.
-    _face_array.RotateFaceToVertex(0, _i);
+    _face_array.RotateFaceToVertex(0, i);
     ordered_face_indices.push_back(0);
 
     // Order remaining faces.
@@ -150,7 +160,7 @@ class InternalPatch
         p = _face_array.GetFace(j);
 
         for (int k = 0; k < n; ++k) {
-          if (_i == p[k] && last_vertex == p[(k + 1) % n]) {
+          if (i == p[k] && last_vertex == p[(k + 1) % n]) {
             next_face_index = j;
             break;
           }
@@ -164,29 +174,14 @@ class InternalPatch
       // Ensure the half edge was found.
       assert(next_face_index != std::numeric_limits<size_t>::max());
 
-      _face_array.RotateFaceToVertex(next_face_index, _i);
+      _face_array.RotateFaceToVertex(next_face_index, i);
       ordered_face_indices.push_back(next_face_index);
     }
 
     _face_array.PermuteFaces(ordered_face_indices);
-  }
 
-  void SetIsPatchValid() {
-    assert(_face_array.GetNumberOfFaces() == 4);
-
-    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
-      if (_face_array.GetNumberOfSides(j) != 4) {
-        _is_valid = false;
-        return;
-      }
-    }
-
-    _is_valid = true;
-  }
-
-  void SetPatchVertexIndices() {
-    // Initialise `_I`.
-    _I.push_back(_i);
+    // Construct `_I` from the reordered `_face_array` ...
+    _I.push_back(i);
 
     for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
       const int n = _face_array.GetNumberOfSides(j);
@@ -194,7 +189,7 @@ class InternalPatch
       std::copy(p + 1, p + n - 1, std::back_inserter(_I));
     }
 
-    // Initialise `_S`.
+    // ... and finally initialise `_S`.
     const size_t n = _I.size();
     _S.setIdentity(n, n);
   }
@@ -430,14 +425,13 @@ class InternalPatch
   FaceArray _face_array;
 
   bool _V_is_valid;
+  Matrix _V;
 
-  int _i;
-  std::vector<int> _I;
   bool _is_valid;
+  std::vector<int> _I;
 
   std::vector<std::unique_ptr<InternalPatch<Scalar>>> _children;
   Matrix _S;
-  Matrix _V;
 };
 
 // Patch
