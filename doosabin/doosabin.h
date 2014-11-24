@@ -82,7 +82,7 @@ inline void basis_vector(const Tu & u, Tb & b)
   static const FB1 f1;
 
   for (size_t i = 0; i < b_size; ++i)
-    b[i] = f0(PatchOrdering[i][0], u[0]) * f1(PatchOrdering[i][1], u[1]);
+    b[i] = f0(u[0], PatchOrdering[i][0]) * f1(u[1], PatchOrdering[i][1]);
 }
 
 // Patch (forward declaration)
