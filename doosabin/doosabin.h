@@ -113,10 +113,9 @@ class InternalPatch
   // EvaluatePosition
   template <typename U, typename R>
   void EvaluatePosition(const U& u, R* r) {
-    Vector2 _u(u);
     return Evaluate<uniform_quadratic_bspline::Position,
                     uniform_quadratic_bspline::Position,
-                    EvaluatePositionFunctor>(_u, r);
+                    EvaluatePositionFunctor>(u, r);
   }
 
  protected:
@@ -328,106 +327,89 @@ class InternalPatch
   }
 
   // Evaluate
-  template <typename FB0,
-            typename FB1,
-            typename FEval,
-            typename Tu,
-            typename Tr>
-  void Evaluate(Tu & u, Tr & r)
-  {
-    if (_is_valid)
-    {
-      // get the basis vector for the quantity
-      Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
-      BiquadraticBsplineBasis<FB0, FB1>(u, &b);
+  template <typename F, typename G, typename E, typename U, typename R>
+  void Evaluate(const U& u, R* r) {
+    Vector2 _u(u);
+    assert(r != nullptr);
+    return EvaluateInternal<F, G, E>(&_u, r);
+  }
 
-      static const FEval feval;
-      feval(*this, b, r);
+  template <typename F, typename G, typename E, typename R>
+  void EvaluateInternal(Vector2* u, R* r) {
+    if (_is_valid) {
+      // Get the basis vector for the quantity ...
+      Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
+      BiquadraticBsplineBasis<F, G>(*u, &b);
+
+      // ... and evaluate the required quantity.
+      static const E e;
+      e(this, b, r);
 
       return;
     }
 
     SubdivideChildren();
 
-    if (_depth == (kMaxSubdivisionDepth - 1))
-    {
-      // on second to last level of subdivision, adjust `U` so that it
-      // falls within a valid patch
+    assert(_depth <= (kMaxSubdivisionDepth - 1));
+    if (_depth == (kMaxSubdivisionDepth - 1)) {
+      // On second to last level of subdivision, adjust `U` so that it falls
+      // within a valid patch.
       AdjustUForValidChild(u);
     }
 
-    // get child and translate `u` for child
-    int child_index = PassToChild(u);
-    return _children[child_index]->Evaluate<FB0, FB1, FEval>(u, r);
+    // Get child and translate `u` for child patch.
+    return _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, r);
   }
 
-  template <typename Tu>
-  void AdjustUForValidChild(Tu & u) const
-  {
+  void AdjustUForValidChild(Vector2* u) const {
     assert(_children.size() > 0);
 
-    for (size_t i = 0; i < _children.size(); ++i)
-    {
-      InternalPatch<Scalar> & child = *_children[i];
-      if (child._is_valid)
-      {
-        u[0] = 0.5 + kValidUOffsets[i][0] * Scalar(kValidUEpsilon);
-        u[1] = 0.5 + kValidUOffsets[i][1] * Scalar(kValidUEpsilon);
+    for (size_t i = 0; i < _children.size(); ++i) {
+      if (_children[i]->_is_valid) {
+        (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kValidUEpsilon);
+        (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kValidUEpsilon);
         return;
       }
     }
   }
 
-  template <typename Tu>
-  int PassToChild(Tu & u) const
-  {
-    int child_index = -1;
+  int PassToChild(Vector2* u) const {
+    int child_index;
+    auto& _u = *u;
+    if (_u[0] >= Scalar(0.5)) {
+      _u[0] -= Scalar(0.5);
 
-    if (u[0] >= 0.5)
-    {
-      u[0] -= 0.5;
-
-      if (u[1] >= 0.5)
-      {
-        u[1] -= 0.5;
+      if (_u[1] >= Scalar(0.5)) {
+        _u[1] -= Scalar(0.5);
         child_index = 2;
-      }
-      else
-      {
+      } else {
         child_index = 3;
       }
-    }
-    else
-    {
-      if (u[1] >= 0.5)
-      {
-        u[1] -= 0.5;
+    } else {
+      if (_u[1] >= Scalar(0.5)) {
+        _u[1] -= Scalar(0.5);
         child_index = 1;
-      }
-      else
-      {
+      } else {
         child_index = 0;
       }
     }
 
-    u[0] *= 2.0;
-    u[1] *= 2.0;
+    _u[0] *= Scalar(2);
+    _u[1] *= Scalar(2);
 
     return child_index;
   }
 
-  void InvalidateVertices()
-  {
+  void InvalidateVertices() {
     _V_is_valid = false;
 
-    for (auto & child : _children)
+    for (auto & child : _children) {
       child->InvalidateVertices();
+    }
   }
 
-  const Matrix & V()
-  {
-    if (!_V_is_valid)
-    {
+  const Matrix & V() {
+    if (!_V_is_valid) {
       _V.noalias() = _root->Vertices() * _S.transpose();
       _V_is_valid = true;
     }
@@ -435,16 +417,17 @@ class InternalPatch
     return _V;
   }
 
+  // Evaluation functors.
+
   // EvaluatePosition
   struct EvaluatePositionFunctor {
     template <typename B, typename R>
-    void operator()(InternalPatch<Scalar>& patch, const B& b, R* r) const {
-      r->noalias() = patch.V() * b;
+    void operator()(InternalPatch<Scalar>* patch, const B& b, R* r) const {
+      r->noalias() = patch->V() * b;
     }
   };
 
-  // Evaluation
-protected:
+ protected:
   const Patch<Scalar>* _root;
   const InternalPatch<Scalar>* _parent;
   size_t _depth;
