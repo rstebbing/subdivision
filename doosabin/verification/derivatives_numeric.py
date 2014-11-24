@@ -17,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('N', nargs='?', type=int, default=6)
     parser.add_argument('n', nargs='?', type=int, default=16)
-    parser.add_argument('--seed', type=int, default=1337)
+    parser.add_argument('--seed', type=int, default=-1)
     args = parser.parse_args()
 
     # Generate example extraordinary patch with an extraordinary face of `N`
