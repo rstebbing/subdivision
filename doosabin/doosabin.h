@@ -203,76 +203,74 @@ class InternalPatch
   }
 
   // Subdivision (core)
-  void SubdivideChildren()
-  {
-    // don't subdivide twice
-    if (_children.size() > 0)
+  void SubdivideChildren() {
+    // Don't repeat subdivision.
+    if (_children.size() > 0) {
       return;
+    }
 
     const size_t n_faces = _face_array.GetNumberOfFaces();
     assert(n_faces == 4);
 
-    // create `S` to include the all child vertices
+    // Create `S` to include all of the child vertices.
     size_t n_child_vertices = 0;
-    for (size_t i = 0; i < n_faces; ++i)
+    for (size_t i = 0; i < n_faces; ++i) {
       n_child_vertices += _face_array.GetNumberOfSides(i);
+    }
 
     Matrix S(n_child_vertices, _I.size());
-    S.fill(0.0);
+    S.fill(0);
 
-    // fill `S` using the Doo-Sabin subdivision weights
+    // Fill `S` using the Doo-Sabin subdivision weights.
     int child_index = 0;
-    for (size_t i = 0; i < n_faces; ++i)
-    {
-      // get subdivision weights of face `i` with `n` vertices
+    for (size_t i = 0; i < n_faces; ++i) {
+      // Get subdivision weights of face `i` with `n` vertices.
       const int n = _face_array.GetNumberOfSides(i);
       Vector w;
       DooSabinWeights(n, &w);
 
-      // get `face_indices_in_I`
+      // Get `face_indices_in_I`.
       std::vector<size_t> face_indices_in_I(n);
       auto p = _face_array.GetFace(i);
 
-      for (int j = 0; j < n; ++j)
-      {
-        // find index of vertex `p[j]` in `_I`
+      for (int j = 0; j < n; ++j) {
+        // Find index of vertex `p[j]` in `_I`.
         auto it = std::find(_I.begin(), _I.end(), p[j]);
         assert(it != _I.end());
         face_indices_in_I[j] = std::distance(_I.begin(), it);
       }
 
-      // copy `w` into `S` for each child vertex
-      for (int j = 0; j < n; ++j)
-      {
-        for (int k = 0; k < n; ++k)
+      // Copy `w` into `S` for each child vertex.
+      for (int j = 0; j < n; ++j) {
+        for (int k = 0; k < n; ++k) {
           S(child_index, face_indices_in_I[k]) = w[modulo(k - j, n)];
+        }
 
         ++child_index;
       }
     }
 
-    // get `S` to reference the top-level vertices
+    // Get `S` to reference the top level vertices.
     assert(_S.rows() > 0 && _S.cols() > 0);
     S *= _S;
 
-    // build `child_face_array`
+    // Build `child_face_array`.
     child_index = 0;
     std::vector<int> raw_child_face_array;
     raw_child_face_array.push_back(static_cast<int>(n_faces));
-    for (size_t i = 0; i < n_faces; ++i)
-    {
+    for (size_t i = 0; i < n_faces; ++i) {
       int n = _face_array.GetNumberOfSides(i);
       raw_child_face_array.push_back(n);
 
-      for (int j = 0; j < n; ++j)
+      for (int j = 0; j < n; ++j) {
         raw_child_face_array.push_back(child_index++);
+      }
     }
     FaceArray child_face_array(std::move(raw_child_face_array));
 
-    // build child patches
-    for (size_t i = 0; i < n_faces; ++i)
-    {
-      // four child faces are created because patch is valency 4
+    // Build child patches.
+    for (size_t i = 0; i < n_faces; ++i) {
+      // Four child faces are created because patch has valency four.
       raw_child_face_array.push_back(4);
 
       auto face = child_face_array.GetFace(i);
@@ -280,13 +278,12 @@ class InternalPatch
       auto opp_face = child_face_array.GetFace((i + 2) % n_faces);
       auto prev_face = child_face_array.GetFace((i + 3) % n_faces);
 
-      // first child face
+      // First child face.
       const int n = child_face_array.GetNumberOfSides(i);
-
       raw_child_face_array.push_back(n);
       std::copy(face, face + n, std::back_inserter(raw_child_face_array));
 
-      // next three generated faces
+      // Next three generated faces.
       const int n_prev = child_face_array.GetNumberOfSides((i + 3) % n_faces);
 
       const int child_faces[][4] = {
@@ -295,16 +292,17 @@ class InternalPatch
         {face[0], prev_face[0], prev_face[modulo(-1, n_prev)], face[1]}
       };
 
-      for (int j = 0; j < 3; ++j)
-      {
+      for (int j = 0; j < 3; ++j) {
         raw_child_face_array.push_back(4);
-        std::copy(child_faces[j], child_faces[j] + 4, std::back_inserter(raw_child_face_array));
+        std::copy(child_faces[j],
+                  child_faces[j] + 4,
+                  std::back_inserter(raw_child_face_array));
       }
 
-      // build `child_patch_array`
+      // Build `child_patch_array`.
       FaceArray child_patch_array(std::move(raw_child_face_array));
 
-      // permute the patch faces to preserve `u` directionality
+      // Permute the patch faces to preserve `u` directionality.
       std::vector<size_t> child_face_permutation(4);
       child_face_permutation[0] = modulo(0 - static_cast<int>(i), 4);
       child_face_permutation[1] = modulo(1 - static_cast<int>(i), 4);
@@ -312,17 +310,18 @@ class InternalPatch
       child_face_permutation[3] = modulo(3 - static_cast<int>(i), 4);
       child_patch_array.PermuteFaces(child_face_permutation);
 
-      // build `child` and propagate `_root`.
+      // Build `child` and propagate `_root`..
       std::unique_ptr<InternalPatch<Scalar>> child(new InternalPatch<Scalar>(
         _root,
         this,
         _depth + 1,
         std::move(child_patch_array)));
 
-      // build `child._S` and move to `_children`
+      // Build `child._S` and move to `_children`.
       child->_S.resize(child->_I.size(), S.cols());
-      for (size_t i = 0; i < child->_I.size(); ++i)
+      for (size_t i = 0; i < child->_I.size(); ++i) {
         child->_S.row(i) = S.row(child->_I[i]);
+      }
 
       _children.push_back(std::move(child));
     }
