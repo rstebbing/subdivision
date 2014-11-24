@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIR})
 SET(RSUTIL_INCLUDE_DIR "" CACHE PATH "")
 INCLUDE_DIRECTORIES(${RSUTIL_INCLUDE_DIR})
 
-SET(DOOSABIN_HDRS doosabin.h)
+SET(DOOSABIN_HDRS doosabin.h uniform_quadratic_bspline.h)
 
 ADD_EXECUTABLE(example
                example.cpp
