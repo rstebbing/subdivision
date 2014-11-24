@@ -36,12 +36,18 @@ int main() {
 
   patch.SetVertices(X.transpose());
 
-  Eigen::Vector2d u;
-  u << 0.0, 1.0;
+  Eigen::MatrixXd U(3, 2);
+  U << 0, 0,
+       1, 0,
+       0, 1;
   Eigen::Vector2d r;
-  patch.EvaluatePosition(u, r);
 
-  std::cout << r << std::endl;
+  for (int i = 0; i < 3; ++i) {
+    Eigen::Vector2d u = U.row(i);
+    patch.EvaluatePosition(u, r);
+    std::cout << "u = " << u.transpose();
+    std::cout << ", r = " << r.transpose() << std::endl;
+  }
 
   return 0;
 }
