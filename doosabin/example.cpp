@@ -43,9 +43,8 @@ int main() {
   Eigen::Vector2d r;
 
   for (int i = 0; i < 3; ++i) {
-    Eigen::Vector2d u = U.row(i);
-    patch.EvaluatePosition(u, r);
-    std::cout << "u = " << u.transpose();
+    patch.EvaluatePosition(U.row(i), &r);
+    std::cout << "u = " << U.row(i);
     std::cout << ", r = " << r.transpose() << std::endl;
   }
 
