@@ -12,33 +12,7 @@
 #include "Math/linalg.h"
 #include "Math/modulo.h"
 
-// uniform_quadratic_bspline
-namespace uniform_quadratic_bspline {
-
-// Position
-class Position
-{
-public:
-  template <typename Scalar>
-  inline Scalar operator()(const int k, const Scalar t) const
-  {
-    switch (k)
-    {
-    case 0:
-      return 0.5 * (1.0 - t) * (1.0 - t);
-    case 1:
-      return -t * t + t + 0.5;
-    case 2:
-      return 0.5 * (t * t);
-    default:
-      break;
-    };
-
-    return 0.0;
-  }
-};
-
-} // namespace uniform_quadratic_bspline
+#include "uniform_quadratic_bspline.h"
 
 // doosabin
 namespace doosabin {
