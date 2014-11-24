@@ -18,7 +18,6 @@
 namespace doosabin {
 
 using face_array::FaceArray;
-using face_array::GeneralMesh;
 
 using modulo::modulo;
 
