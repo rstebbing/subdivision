@@ -51,34 +51,29 @@ const int ValidUOffsets[][2] = {{-1, -1},
 // ValidUEpsilon
 const double ValidUEpsilon = 1e-6;
 
-// TODO Rename `NumPatchControlVertices` with leading "k" and to be
-// consistent with doosabin.py.
-// NumPatchControlVertices
-const size_t NumPatchControlVertices = 9;
+// kNumBiquadraticBsplineBasis
+const size_t kNumBiquadraticBsplineBasis = 9;
 
-// PatchOrdering
-const int PatchOrdering[NumPatchControlVertices][2] = {{1, 1},
-                                                       {1, 0},
-                                                       {0, 0},
-                                                       {0, 1},
-                                                       {0, 2},
-                                                       {1, 2},
-                                                       {2, 2},
-                                                       {2, 1},
-                                                       {2, 0}};
+// kBiquadraticBsplineBasis
+const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
+                                                                      {1, 0},
+                                                                      {0, 0},
+                                                                      {0, 1},
+                                                                      {0, 2},
+                                                                      {1, 2},
+                                                                      {2, 2},
+                                                                      {2, 1},
+                                                                      {2, 0}};
 
-// basis_vector
-template <typename FB0, typename FB1, typename Tu, typename Tb>
-inline void basis_vector(const Tu & u, Tb & b)
-{
-  size_t b_size = static_cast<size_t>(b.size());
-  assert(b_size == NumPatchControlVertices);
-
-  static const FB0 f0;
-  static const FB1 f1;
-
-  for (size_t i = 0; i < b_size; ++i)
-    b[i] = f0(u[0], PatchOrdering[i][0]) * f1(u[1], PatchOrdering[i][1]);
+// BiquadraticBsplineBasis
+template <typename F, typename G, typename U, typename B>
+inline void BiquadraticBsplineBasis(const U& u, B* b) {
+  static const F f;
+  static const G g;
+  for (typename B::Index i = 0; i < b->size(); ++i) {
+    (*b)[i] = f(u[0], kBiquadraticBsplineBasis[i][0]) *
+              g(u[1], kBiquadraticBsplineBasis[i][1]);
+  }
 }
 
 // Patch (forward declaration)
@@ -373,8 +368,8 @@ public:
     if (_is_valid)
     {
       // get the basis vector for the quantity
-      Eigen::Matrix<Scalar, NumPatchControlVertices, 1> b;
-      basis_vector<FB0, FB1>(u, b);
+      Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
+      BiquadraticBsplineBasis<FB0, FB1>(u, &b);
 
       static const FEval feval;
       feval(*this, b, r);
