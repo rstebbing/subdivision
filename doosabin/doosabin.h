@@ -403,12 +403,12 @@ class InternalPatch
   void InvalidateVertices() {
     _V_is_valid = false;
 
-    for (auto & child : _children) {
+    for (auto& child : _children) {
       child->InvalidateVertices();
     }
   }
 
-  const Matrix & V() {
+  const Matrix& V() {
     if (!_V_is_valid) {
       _V.noalias() = _root->Vertices() * _S.transpose();
       _V_is_valid = true;
@@ -448,17 +448,17 @@ class InternalPatch
 template <typename Scalar>
 class Patch : public InternalPatch<Scalar> {
  public:
-  Patch(FaceArray && face_array)
+  Patch(FaceArray&& face_array)
     : InternalPatch<Scalar>(this, nullptr, 0, std::move(face_array))
   {}
 
   template <typename TV>
-  void SetVertices(const TV & V) {
+  void SetVertices(const TV& V) {
     _V0 = V;
     this->InvalidateVertices();
   }
 
-  const Matrix & Vertices() const {
+  const Matrix& Vertices() const {
     return _V0;
   }
 
