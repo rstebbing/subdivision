@@ -81,14 +81,13 @@ static const int kValidUOffsets[][2] = {{-1, -1},
                                         { 1,  1},
                                         { 1, -1}};
 
-// Patch (forward declaration)
+// Patch (required forward declaration.)
 template <typename Scalar>
 class Patch;
 
 // InternalPatch
 template <typename Scalar>
-class InternalPatch
-{
+class InternalPatch {
  public:
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
@@ -302,7 +301,7 @@ class InternalPatch
       child_face_permutation[3] = modulo(3 - static_cast<int>(i), 4);
       child_patch_array.PermuteFaces(child_face_permutation);
 
-      // Build `child` and propagate `_root`..
+      // Build `child` and propagate `_root`.
       std::unique_ptr<InternalPatch<Scalar>> child(new InternalPatch<Scalar>(
         _root,
         this,
