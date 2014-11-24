@@ -19,8 +19,8 @@ namespace uniform_quadratic_bspline {
 class Position
 {
 public:
-  template <typename TFloat>
-  inline TFloat operator()(const int k, const TFloat t) const
+  template <typename Scalar>
+  inline Scalar operator()(const int k, const Scalar t) const
   {
     switch (k)
     {
@@ -112,16 +112,16 @@ inline void basis_vector(const Tu & u, Tb & b)
 }
 
 // Patch (forward declaration)
-template <typename TFloat>
+template <typename Scalar>
 class Patch;
 
 // InternalPatch
-template <typename TFloat>
+template <typename Scalar>
 class InternalPatch
 {
 public:
-  typedef typename linalg::Matrix<TFloat>::Type MatrixXf;
-  typedef typename linalg::Vector<TFloat>::Type VectorXf;
+  typedef typename linalg::Matrix<Scalar>::Type MatrixXf;
+  typedef typename linalg::Vector<Scalar>::Type VectorXf;
 
   InternalPatch(const InternalPatch * parent, size_t depth,
                 FaceArray && face_array)
@@ -379,7 +379,7 @@ public:
       child_patch_array.PermuteFaces(child_face_permutation);
 
       // build `child`
-      std::unique_ptr<InternalPatch<TFloat> > child(new InternalPatch<TFloat>(
+      std::unique_ptr<InternalPatch<Scalar> > child(new InternalPatch<Scalar>(
         this, _depth + 1, std::move(child_patch_array)));
       // propagate root
       child->_root = _root;
@@ -404,7 +404,7 @@ public:
     if (_is_valid)
     {
       // get the basis vector for the quantity
-      Eigen::Matrix<TFloat, NumPatchControlVertices, 1> b;
+      Eigen::Matrix<Scalar, NumPatchControlVertices, 1> b;
       basis_vector<FB0, FB1>(u, b);
 
       static const FEval feval;
@@ -434,11 +434,11 @@ public:
 
     for (size_t i = 0; i < _children.size(); ++i)
     {
-      InternalPatch<TFloat> & child = *_children[i];
+      InternalPatch<Scalar> & child = *_children[i];
       if (child._is_valid)
       {
-        u[0] = 0.5 + ValidUOffsets[i][0] * TFloat(ValidUEpsilon);
-        u[1] = 0.5 + ValidUOffsets[i][1] * TFloat(ValidUEpsilon);
+        u[0] = 0.5 + ValidUOffsets[i][0] * Scalar(ValidUEpsilon);
+        u[1] = 0.5 + ValidUOffsets[i][1] * Scalar(ValidUEpsilon);
         return;
       }
     }
@@ -506,7 +506,7 @@ public:
   {
   public:
     template <typename Tb, typename Tr>
-    void operator()(InternalPatch<TFloat> & patch, const Tb & b, Tr & r) const
+    void operator()(InternalPatch<Scalar> & patch, const Tb & b, Tr & r) const
     {
       r.noalias() = patch.V() * b;
     }
@@ -514,11 +514,11 @@ public:
 
   // Evaluation
 protected:
-  const InternalPatch<TFloat> * _parent;
+  const InternalPatch<Scalar> * _parent;
   size_t _depth;
   FaceArray _face_array;
 
-  const Patch<TFloat> * _root;
+  const Patch<Scalar> * _root;
 
   bool _V_is_valid;
 
@@ -526,18 +526,18 @@ protected:
   std::vector<int> _I;
   bool _is_valid;
 
-  std::vector<std::unique_ptr<InternalPatch<TFloat>>> _children;
+  std::vector<std::unique_ptr<InternalPatch<Scalar>>> _children;
   MatrixXf _S;
   MatrixXf _V;
 };
 
 // Patch
-template <typename TFloat>
-class Patch : public InternalPatch<TFloat>
+template <typename Scalar>
+class Patch : public InternalPatch<Scalar>
 {
 public:
   Patch(FaceArray && face_array)
-    : InternalPatch<TFloat>(nullptr, 0, std::move(face_array))
+    : InternalPatch<Scalar>(nullptr, 0, std::move(face_array))
   {
     this->_root = this;
   }
