@@ -22,16 +22,19 @@ using face_array::GeneralMesh;
 
 using modulo::modulo;
 
-// weights
-template <typename Tw>
-void weights(const int n, Tw & w)
-{
-  if (w.size() != n)
-    w.resize(n);
+// DooSabinWeights
+template <typename Weights>
+void DooSabinWeights(int N, Weights* w) {
+  typedef typename Weights::Scalar T;
 
-  for (int i = 1; i < n; ++i)
-    w[i] = (3.0 + 2.0 * cos(2.0 * M_PI * i / n)) / (4.0 * n);
-  w[0] = (n + 5.0) / (4.0*n);
+  if (w->size() != N) {
+    w->resize(N);
+  }
+
+  for (int i = 1; i < N; ++i) {
+    (*w)[i] = (3 + 2 * cos(2 * T(M_PI) * i / N)) / (4 * N);
+  }
+  (*w)[0] = T(N + 5) / (4 * N);
 }
 
 // TODO Remove the use of `ValencyNotFourException` and use `glog` instead.
@@ -267,7 +270,7 @@ public:
       // get subdivision weights of face `i` with `n` vertices
       const int n = _face_array.GetNumberOfSides(i);
       VectorXf w;
-      weights(n, w);
+      DooSabinWeights(n, &w);
 
       // get `face_indices_in_I`
       std::vector<int> face_indices_in_I(n);
