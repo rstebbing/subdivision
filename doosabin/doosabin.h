@@ -5,6 +5,7 @@
 // Includes
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -145,7 +146,7 @@ class InternalPatch
       const int last_vertex = p[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
-      int next_face_index = -1;
+      size_t next_face_index = std::numeric_limits<size_t>::max();
 
       for (size_t j = 0; j < n_faces; ++j) {
         n = _face_array.GetNumberOfSides(j);
@@ -153,18 +154,18 @@ class InternalPatch
 
         for (int k = 0; k < n; ++k) {
           if (_i == p[k] && last_vertex == p[(k + 1) % n]) {
-            next_face_index = static_cast<int>(j);
+            next_face_index = j;
             break;
           }
         }
 
-        if (next_face_index >= 0) {
+        if (next_face_index != std::numeric_limits<size_t>::max()) {
           break;
         }
       }
 
       // Ensure the half edge was found.
-      assert(next_face_index >= 0);
+      assert(next_face_index != std::numeric_limits<size_t>::max());
 
       _face_array.RotateFaceToVertex(next_face_index, _i);
       ordered_face_indices.push_back(next_face_index);
@@ -197,7 +198,7 @@ class InternalPatch
     }
 
     // Initialise `_S`.
-    const int n = _I.size();
+    const size_t n = _I.size();
     _S.setIdentity(n, n);
   }
 
@@ -220,7 +221,7 @@ class InternalPatch
     S.fill(0.0);
 
     // fill `S` using the Doo-Sabin subdivision weights
-    size_t child_index = 0;
+    int child_index = 0;
     for (size_t i = 0; i < n_faces; ++i)
     {
       // get subdivision weights of face `i` with `n` vertices
@@ -229,7 +230,7 @@ class InternalPatch
       DooSabinWeights(n, &w);
 
       // get `face_indices_in_I`
-      std::vector<int> face_indices_in_I(n);
+      std::vector<size_t> face_indices_in_I(n);
       auto p = _face_array.GetFace(i);
 
       for (int j = 0; j < n; ++j)
@@ -257,7 +258,7 @@ class InternalPatch
     // build `child_face_array`
     child_index = 0;
     std::vector<int> raw_child_face_array;
-    raw_child_face_array.push_back(n_faces);
+    raw_child_face_array.push_back(static_cast<int>(n_faces));
     for (size_t i = 0; i < n_faces; ++i)
     {
       int n = _face_array.GetNumberOfSides(i);
@@ -275,15 +276,15 @@ class InternalPatch
       raw_child_face_array.push_back(4);
 
       auto face = child_face_array.GetFace(i);
-      auto next_face = child_face_array.GetFace(modulo(i + 1, n_faces));
-      auto opp_face = child_face_array.GetFace(modulo(i + 2, n_faces));
-      auto prev_face = child_face_array.GetFace(modulo(i + 3, n_faces));
+      auto next_face = child_face_array.GetFace((i + 1) % n_faces);
+      auto opp_face = child_face_array.GetFace((i + 2) % n_faces);
+      auto prev_face = child_face_array.GetFace((i + 3) % n_faces);
 
       // first child face
       const int n = child_face_array.GetNumberOfSides(i);
 
       raw_child_face_array.push_back(n);
-      std::copy(face, face + n, back_inserter(raw_child_face_array));
+      std::copy(face, face + n, std::back_inserter(raw_child_face_array));
 
       // next three generated faces
       const int n_prev = child_face_array.GetNumberOfSides((i + 3) % n_faces);
@@ -297,7 +298,7 @@ class InternalPatch
       for (int j = 0; j < 3; ++j)
       {
         raw_child_face_array.push_back(4);
-        std::copy(child_faces[j], child_faces[j] + 4, back_inserter(raw_child_face_array));
+        std::copy(child_faces[j], child_faces[j] + 4, std::back_inserter(raw_child_face_array));
       }
 
       // build `child_patch_array`
@@ -305,10 +306,10 @@ class InternalPatch
 
       // permute the patch faces to preserve `u` directionality
       std::vector<size_t> child_face_permutation(4);
-      child_face_permutation[0] = static_cast<size_t>(modulo(0 - i, 4));
-      child_face_permutation[1] = static_cast<size_t>(modulo(1 - i, 4));
-      child_face_permutation[2] = static_cast<size_t>(modulo(2 - i, 4));
-      child_face_permutation[3] = static_cast<size_t>(modulo(3 - i, 4));
+      child_face_permutation[0] = modulo(0 - static_cast<int>(i), 4);
+      child_face_permutation[1] = modulo(1 - static_cast<int>(i), 4);
+      child_face_permutation[2] = modulo(2 - static_cast<int>(i), 4);
+      child_face_permutation[3] = modulo(3 - static_cast<int>(i), 4);
       child_patch_array.PermuteFaces(child_face_permutation);
 
       // build `child` and propagate `_root`.
