@@ -20,6 +20,13 @@
 // doosabin
 namespace doosabin {
 
+// Constants.
+
+// `kMaxSubdivisionDepth` and `kValidUEpsilon` set the subdivision limit and
+// adjustment to coordinates on the penultimate subdivision level.
+static const size_t kMaxSubdivisionDepth = 10;
+static const double kValidUEpsilon = 1e-6;
+
 // Types.
 using face_array::FaceArray;
 using modulo::modulo;
@@ -41,10 +48,8 @@ void DooSabinWeights(int N, Weights* w) {
   (*w)[0] = T(N + 5) / (4 * N);
 }
 
-// kNumBiquadraticBsplineBasis
+// BiquadraticBsplineBasis
 const size_t kNumBiquadraticBsplineBasis = 9;
-
-// kBiquadraticBsplineBasis
 const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
                                                                       {1, 0},
                                                                       {0, 0},
@@ -55,7 +60,6 @@ const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
                                                                       {2, 1},
                                                                       {2, 0}};
 
-// BiquadraticBsplineBasis
 template <typename F, typename G, typename U, typename B>
 inline void BiquadraticBsplineBasis(const U& u, B* b) {
   if (b->size() != kNumBiquadraticBsplineBasis) {
@@ -76,12 +80,6 @@ static const int kValidUOffsets[][2] = {{-1, -1},
                                         {-1,  1},
                                         { 1,  1},
                                         { 1, -1}};
-
-// kMaxSubdivisionDepth
-static const size_t kMaxSubdivisionDepth = 10;
-
-// kValidUEpsilon
-static const double kValidUEpsilon = 1e-6;
 
 // Patch (forward declaration)
 template <typename Scalar>
@@ -201,8 +199,8 @@ class InternalPatch
     _S.setIdentity(n, n);
   }
 
-  // Subdivision (core)
-  void SubdivideChildren() {
+  // Subdivision
+  void Subdivide() {
     // Don't repeat subdivision.
     if (_children.size() > 0) {
       return;
@@ -326,7 +324,7 @@ class InternalPatch
     }
   }
 
-  // Evaluate
+  // Evaluation
   template <typename F, typename G, typename E, typename U, typename R>
   void Evaluate(const U& u, R* r) {
     Vector2 _u(u);
@@ -348,7 +346,7 @@ class InternalPatch
       return;
     }
 
-    SubdivideChildren();
+    Subdivide();
 
     assert(_depth <= (kMaxSubdivisionDepth - 1));
     if (_depth == (kMaxSubdivisionDepth - 1)) {
@@ -416,8 +414,6 @@ class InternalPatch
 
     return _V;
   }
-
-  // Evaluation functors.
 
   // EvaluatePosition
   struct EvaluatePositionFunctor {
