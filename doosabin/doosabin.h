@@ -114,37 +114,6 @@ public:
                     EvaluatePositionFunctor>(u, r);
   }
 
-  const std::vector<int> & PatchIndices() const
-  {
-    return _I;
-  }
-
-  int GetAdjacentVertexOffset(int adjacent_vertex) const
-  {
-    for (size_t i = 0; i < _face_array.GetNumberOfFaces(); ++i)
-    {
-      auto face = _face_array.GetFace(i);
-      if (face[1] == adjacent_vertex)
-        return static_cast<int>(i);
-    }
-
-    return -1;
-  }
-
-  int GetFaceOffset(const std::vector<int> & face)
-  {
-    auto it = std::find(face.begin(), face.end(), _i);
-    if (it == face.end())
-      return -1;
-
-    size_t j = std::distance(face.begin(), it);
-    int next_vertex = face[(j + 1) % face.size()];
-
-    return _face_array.FindHalfEdge(_i, next_vertex);
-  }
-
-  bool IsValid() const { return _is_valid; }
-
 // FIXME Was `protected`.
 public:
   // Initialisation
