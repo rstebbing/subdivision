@@ -126,22 +126,26 @@ class Patch {
   EVALUATE(Mx, Position, Position, MultiplyAndRepeat);
   #undef EVALUATE
 
-  int GetAdjacentVertexOffset(int adjacent_vertex) const {
+  size_t GetFaceIndexWithAdjacentVertex(int j) const {
     for (size_t i = 0; i < _face_array.GetNumberOfFaces(); ++i) {
-      if (_face_array.GetFace(i)[1] == adjacent_vertex) {
-        return static_cast<int>(i);
+      if (_face_array.GetFace(i)[1] == j) {
+        return i;
       }
     }
-    return -1;
+    return std::numeric_limits<size_t>::max();
   }
 
-  int GetFaceOffset(const std::vector<int>& face) {
+  size_t GetFaceIndexOfFace(const std::vector<int>& face) {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
       size_t j = std::distance(face.begin(), it);
-      return _face_array.FindHalfEdge(_I[0], face[(j + 1) % face.size()]);
+      int half_edge = _face_array.FindHalfEdge(
+        _I[0], face[(j + 1) % face.size()]);
+      if (half_edge >= 0) {
+        return half_edge;
+      }
     }
-    return -1;
+    return std::numeric_limits<size_t>::max();
   }
 
  private:
@@ -503,7 +507,8 @@ class Surface {
   #undef EVALUATE
 
   template <typename P, typename TU>
-  void UniformParameterisation(int N, P* p, TU* U, std::vector<int>* T = nullptr) {
+  void UniformParameterisation(int N, P* p, TU* U,
+                               std::vector<int>* T = nullptr) {
     // Ensure `N >= 1`.
     N = std::max(N, 1);
 
@@ -561,12 +566,14 @@ class Surface {
     }
 
     // Add quadrilaterals between patches.
-    for (size_t i_index = 0; i_index < _patch_vertex_indices.size(); ++i_index) {
+    for (size_t i_index = 0; i_index < _patch_vertex_indices.size();
+         ++i_index) {
       int i = _patch_vertex_indices[i_index];
       int i_offset = static_cast<int>(i_index) * (N * N);
-      auto& patch_i = _patches[i_index];
+
       for (int half_edge_index : _control_mesh.GetHalfEdgesFromVertex(i)) {
-        // Find adjacent patch at vertex `j` (with patch offset `j_offset`) and only process this border once.
+        // Find adjacent patch at vertex `j` (with patch offset `j_offset`).
+        // Skip if `i < j` so that the boundary is only processed once.
         int j = _control_mesh.GetHalfEdge(half_edge_index, 1);
         if (i < j) {
           continue;
@@ -578,11 +585,12 @@ class Surface {
         }
 
         int j_offset = j_index * (N * N);
-        auto& patch_j = _patches[j_index];
 
         // Get the border offsets for each patch.
-        auto& i_vertex_offsets = border_offsets[patch_i->GetAdjacentVertexOffset(j)];
-        auto& j_vertex_offsets = border_offsets[patch_j->GetAdjacentVertexOffset(i)];
+        auto& i_vertex_offsets = border_offsets[
+          _patches[i_index]->GetFaceIndexWithAdjacentVertex(j)];
+        auto& j_vertex_offsets = border_offsets[
+          _patches[j_index]->GetFaceIndexWithAdjacentVertex(i)];
 
         // Add quadrilaterals.
         for (int k = 0; k < (N - 1); ++k) {
@@ -597,17 +605,18 @@ class Surface {
     }
 
     // Add faces at corners of patches.
-    std::vector<int> next_face, current_face;
+    std::vector<int> current_face, next_face;
 
-    for (size_t face_index = 0; face_index < _control_mesh.GetNumberOfFaces(); ++face_index) {
-      next_face.clear();
-      next_face.push_back(0);
-      bool is_next_face_valid = true;
-
+    for (size_t face_index = 0; face_index < _control_mesh.GetNumberOfFaces();
+         ++face_index) {
       auto face = _control_mesh.GetFace(face_index);
       int n = _control_mesh.GetNumberOfSides(face_index);
       current_face.clear();
       std::copy(face, face + n, std::back_inserter(current_face));
+
+      next_face.clear();
+      next_face.push_back(0);
+      bool is_next_face_valid = true;
 
       for (int i : current_face) {
         // Get patch index `i_index` for vertex `i` from `face`.
@@ -617,17 +626,15 @@ class Surface {
           break;
         }
 
-        // Get offset of the face in the patch.
-        int face_offset = _patches[i_index]->GetFaceOffset(current_face);
-
-        auto& i_vertex_offsets = border_offsets[face_offset];
+        // Get offset of `current_face` in the patch and set
+        // `i_vertex_offsets`.
+        auto& i_vertex_offsets = border_offsets[
+          _patches[i_index]->GetFaceIndexOfFace(current_face)];
         next_face.push_back(i_vertex_offsets[N - 1] + i_index * (N * N));
         ++next_face[0];
       }
 
-      if (!is_next_face_valid) {
-        continue;
-      } else {
+      if (is_next_face_valid) {
         std::copy(next_face.begin(), next_face.end(), std::back_inserter(T_));
         ++T_[0];
       }
