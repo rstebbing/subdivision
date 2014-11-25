@@ -278,7 +278,7 @@ class Patch {
     // Build `child_face_array`.
     child_index = 0;
     std::vector<int> raw_child_face_array;
-    raw_child_face_array.push_back(static_cast<int>(4));
+    raw_child_face_array.push_back(4);
     for (size_t i = 0; i < 4; ++i) {
       int n = _face_array.GetNumberOfSides(i);
       raw_child_face_array.push_back(n);
@@ -290,7 +290,7 @@ class Patch {
     FaceArray child_face_array(std::move(raw_child_face_array));
 
     // Build child patches.
-    for (size_t i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
       // Four child faces are created because patch has valency four.
       raw_child_face_array.push_back(4);
 
@@ -325,10 +325,10 @@ class Patch {
 
       // Permute the patch faces to preserve `u` directionality.
       std::vector<size_t> child_face_permutation(4);
-      child_face_permutation[0] = modulo(0 - static_cast<int>(i), 4);
-      child_face_permutation[1] = modulo(1 - static_cast<int>(i), 4);
-      child_face_permutation[2] = modulo(2 - static_cast<int>(i), 4);
-      child_face_permutation[3] = modulo(3 - static_cast<int>(i), 4);
+      child_face_permutation[0] = modulo(0 - i, 4);
+      child_face_permutation[1] = modulo(1 - i, 4);
+      child_face_permutation[2] = modulo(2 - i, 4);
+      child_face_permutation[3] = modulo(3 - i, 4);
       child_patch_array.PermuteFaces(child_face_permutation);
 
       // Build `child`.
