@@ -88,6 +88,10 @@ static const int kValidUOffsets[][2] = {{-1, -1},
                                         { 1,  1},
                                         { 1, -1}};
 
+// Surface
+template <typename Scalar>
+class Surface;
+
 // Patch
 template <typename Scalar>
 class Patch {
@@ -348,7 +352,8 @@ class Patch {
   }
 
   // Evaluation
-  template <typename F, typename G, typename E, typename U, typename TX, typename R>
+  template <typename F, typename G, typename E, typename U, typename TX,
+            typename R>
   void Evaluate(const U& u, const TX& X, R* r) const {
     Vector2 _u(u);
     assert(r != nullptr);
@@ -662,9 +667,9 @@ class Surface {
 
   void InitialisePatches() {
     for (int i : _patch_vertex_indices) {
-      _patches.push_back(std::unique_ptr<Patch>(new Patch(
-          FaceArray(_control_mesh.GetCellArray(_control_mesh.GetFacesAtVertex(i)))
-        )));
+      _patches.push_back(std::unique_ptr<Patch>(new Patch(FaceArray(
+          _control_mesh.GetCellArray(_control_mesh.GetFacesAtVertex(i))
+        ))));
     }
   }
 
