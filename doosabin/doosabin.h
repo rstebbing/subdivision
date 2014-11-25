@@ -118,7 +118,7 @@ class Patch {
                     ScaleIdentity>(u, X, r);
   }
 
- protected:
+ private:
   // Initialise
   void Initialise() {
     // Set `_is_valid`.
@@ -406,7 +406,7 @@ class Patch {
     inline void operator()(int, R*) const {}
   };
 
- protected:
+ private:
   FaceArray _face_array;
   const Patch<Scalar>* _parent;
   size_t _depth;
@@ -414,8 +414,9 @@ class Patch {
   bool _is_valid;
   std::vector<int> _I;
 
-  std::vector<std::unique_ptr<Patch<Scalar>>> _children;
   Matrix _S;
+
+  std::vector<std::unique_ptr<Patch<Scalar>>> _children;
 };
 
 } // namespace doosabin
