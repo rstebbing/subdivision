@@ -116,8 +116,8 @@ class Patch {
   #define EVALUATE(M, F, G, S) \
   template <typename U, typename TX, typename R> \
   void M(const U& u, const TX& X, R* r) { \
-    return Evaluate<uniform_quadratic_bspline:: F, \
-                    uniform_quadratic_bspline:: G, S>(u, X, r); \
+    Evaluate<uniform_quadratic_bspline:: F, \
+             uniform_quadratic_bspline:: G, S>(u, X, r); \
   }
   EVALUATE(M, Position, Position, Scale<1>);
   EVALUATE(Mu, FirstDerivative, Position, Scale<2>);
@@ -328,7 +328,7 @@ class Patch {
   void Evaluate(const U& u, const TX& X, R* r) const {
     Vector2 _u(u);
     assert(r != nullptr);
-    return EvaluateInternal<F, G, E>(&_u, X, r);
+    EvaluateInternal<F, G, E>(&_u, X, r);
   }
 
   template <typename F, typename G, typename E, typename TX, typename R>
