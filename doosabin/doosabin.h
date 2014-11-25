@@ -105,8 +105,11 @@ class Patch {
       _depth(depth),
       _face_array(std::move(face_array)) {
     Initialise();
-    if (!_is_valid && _depth == 0) {
-      Subdivide();
+    if (_depth == 0) {
+      _S.setIdentity(_I.size(), _I.size());
+      if (!_is_valid) {
+        Subdivide();
+      }
     }
   }
 
@@ -190,7 +193,7 @@ class Patch {
 
     _face_array.PermuteFaces(ordered_face_indices);
 
-    // Construct `_I` from the reordered `_face_array` ...
+    // Construct `_I` from the reordered `_face_array`.
     _I.push_back(i);
 
     for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
@@ -198,10 +201,6 @@ class Patch {
       auto p = _face_array.GetFace(j);
       std::copy(p + 1, p + n - 1, std::back_inserter(_I));
     }
-
-    // ... and finally initialise `_S`.
-    const size_t n = _I.size();
-    _S.setIdentity(n, n);
   }
 
   // Subdivision
