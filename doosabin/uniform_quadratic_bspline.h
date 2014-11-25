@@ -32,7 +32,7 @@ struct FirstDerivative {
   inline T operator()(const T& u, int k) const {
     switch (k) {
       case 0:
-        return T(1) + u;
+        return T(-1) + u;
 
       case 1:
         return T(-2) * u + 1;
