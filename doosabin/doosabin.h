@@ -115,7 +115,7 @@ class Patch {
 
   #define EVALUATE(M, F, G, S) \
   template <typename U, typename TX, typename R> \
-  void M(const U& u, const TX& X, R* r) { \
+  void M(const U& u, const TX& X, R* r) const { \
     Evaluate<uniform_quadratic_bspline:: F, \
              uniform_quadratic_bspline:: G, S>(u, X, r); \
   }
