@@ -393,8 +393,8 @@ class Patch {
 
   template <int Exponent>
   struct MultiplyAndScale {
-    template <typename S, typename B, typename X, typename R>
-    inline void operator()(size_t depth, const S& S, const B& b, const X& X,
+    template <typename S, typename B, typename TX, typename R>
+    inline void operator()(size_t depth, const S& S, const B& b, const TX& X,
                            R* r) const {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar StB_data[kMaxNNoAlloc];
