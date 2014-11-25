@@ -27,6 +27,11 @@ namespace doosabin {
 static const size_t kMaxSubdivisionDepth = 10;
 static const double kValidUEpsilon = 1e-6;
 
+// For `N <= kMaxNNoAlloc`, the intermediate subdivided basis vector in
+// `EvaluateInternal` is stored on the stack. For `N > kMaxNNoAlloc`,
+// a call to `malloc` is necessary.
+static const int kMaxNNoAlloc = 16;
+
 // Types.
 using face_array::FaceArray;
 using modulo::modulo;
@@ -332,8 +337,18 @@ class InternalPatch {
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
       BiquadraticBsplineBasis<F, G>(*u, &b);
 
-      // ... and evaluate and scale accordingly.
-      r->noalias() = X * (_S.transpose() * b);
+      // and evaluate ...
+      if (_S.cols() <= kMaxNNoAlloc) {
+        Scalar StB_data[kMaxNNoAlloc];
+        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> StB(StB_data,
+                                                                 _S.cols());
+        StB.noalias() = _S.transpose() * b;
+        r->noalias() = X * StB;
+      } else {
+        r->noalias() = X * (_S.transpose() * b);
+      }
+
+      // and scale.
       static const E e;
       e(_depth, r);
 
