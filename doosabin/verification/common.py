@@ -4,7 +4,7 @@
 import numpy as np
 
 # example_extraordinary_patch
-def example_extraordinary_patch(N):
+def example_extraordinary_patch(N, return_mesh=False):
     if N < 3:
         raise ValueError('N < 3 (= %d)' % N)
     t = np.linspace(0, -2 * np.pi, N, endpoint=False)
@@ -21,12 +21,20 @@ def example_extraordinary_patch(N):
     R = np.r_[a, -b, b, a].reshape(2, 2)
     X = np.dot(X, R.T)
 
-    return np.r_['0,2', X,
-                 (1, X[-1, 1]),
-                 (1, 0),
-                 (1, -1),
-                 (0, -1),
-                 (X[1, 0], -1)]
+    X = np.r_['0,2', X,
+              (1, X[-1, 1]),
+              (1, 0),
+              (1, -1),
+              (0, -1),
+              (X[1, 0], -1)]
+    if not return_mesh:
+        return X
+
+    T = [range(0, N),
+         [0, N - 1, N, N + 1],
+         [0, N + 1, N + 2, N + 3],
+         [0, N + 3, N + 4, 1]]
+    return T, X
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
