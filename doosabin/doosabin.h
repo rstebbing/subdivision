@@ -125,6 +125,7 @@ class Patch {
   EVALUATE(Muu, SecondDerivative, Position, MultiplyAndScale<4>);
   EVALUATE(Muv, FirstDerivative, FirstDerivative, MultiplyAndScale<4>);
   EVALUATE(Mvv, Position, SecondDerivative, MultiplyAndScale<4>);
+  EVALUATE(Mx, Position, Position, MultiplyAndRepeat);
   #undef EVALUATE
 
  private:
@@ -406,6 +407,39 @@ class Patch {
       }
       if (Exponent > 1) {
         *r *= pow(Scalar(Exponent), static_cast<int>(depth));
+      }
+    }
+  };
+
+  class MultiplyAndRepeat {
+   public:
+    template <typename S, typename B, typename TX, typename R>
+    inline void operator()(size_t depth, const S& S, const B& b, const TX& X,
+                           R* r) const {
+      if (S.cols() <= kMaxNNoAlloc) {
+        Scalar StB_data[kMaxNNoAlloc];
+        Eigen::Map<Vector> StB(StB_data, S.cols());
+        StB.noalias() = S.transpose() * b;
+        Repeat(StB, X.rows(), r);
+      } else {
+        Vector StB;
+        StB.noalias() = S.transpose() * b;
+        Repeat(StB, X.rows(), r);
+      }
+    }
+
+   private:
+    template <typename STB, typename R>
+    inline void Repeat(const STB& StB, typename STB::Index d, R* r) const {
+      typedef typename STB::Index Index;
+      const Index n = StB.size();
+      r->resize((d * d) * n);
+      r->setZero();
+
+      for (Index i = 0; i < n; ++i) {
+        for (Index j = 0; j < d; ++j) {
+          (*r)[d * d * i + d * j + j] = StB[i];
+        }
       }
     }
   };
