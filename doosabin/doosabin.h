@@ -105,6 +105,9 @@ class Patch {
       _depth(depth),
       _face_array(std::move(face_array)) {
     Initialise();
+    if (!_is_valid && _depth == 0) {
+      Subdivide();
+    }
   }
 
   // EvaluatePosition
@@ -197,17 +200,9 @@ class Patch {
 
   // Subdivision
   void Subdivide() {
-    // Don't repeat subdivision.
-    if (_children.size() > 0) {
-      return;
-    }
-
-    const size_t n_faces = _face_array.GetNumberOfFaces();
-    assert(n_faces == 4);
-
     // Create `S` to include all of the child vertices.
     size_t n_child_vertices = 0;
-    for (size_t i = 0; i < n_faces; ++i) {
+    for (size_t i = 0; i < 4; ++i) {
       n_child_vertices += _face_array.GetNumberOfSides(i);
     }
 
@@ -216,7 +211,7 @@ class Patch {
 
     // Fill `S` using the Doo-Sabin subdivision weights.
     int child_index = 0;
-    for (size_t i = 0; i < n_faces; ++i) {
+    for (size_t i = 0; i < 4; ++i) {
       // Get subdivision weights of face `i` with `n` vertices.
       const int n = _face_array.GetNumberOfSides(i);
       Vector w;
@@ -250,8 +245,8 @@ class Patch {
     // Build `child_face_array`.
     child_index = 0;
     std::vector<int> raw_child_face_array;
-    raw_child_face_array.push_back(static_cast<int>(n_faces));
-    for (size_t i = 0; i < n_faces; ++i) {
+    raw_child_face_array.push_back(static_cast<int>(4));
+    for (size_t i = 0; i < 4; ++i) {
       int n = _face_array.GetNumberOfSides(i);
       raw_child_face_array.push_back(n);
 
@@ -262,14 +257,14 @@ class Patch {
     FaceArray child_face_array(std::move(raw_child_face_array));
 
     // Build child patches.
-    for (size_t i = 0; i < n_faces; ++i) {
+    for (size_t i = 0; i < 4; ++i) {
       // Four child faces are created because patch has valency four.
       raw_child_face_array.push_back(4);
 
       auto face = child_face_array.GetFace(i);
-      auto next_face = child_face_array.GetFace((i + 1) % n_faces);
-      auto opp_face = child_face_array.GetFace((i + 2) % n_faces);
-      auto prev_face = child_face_array.GetFace((i + 3) % n_faces);
+      auto next_face = child_face_array.GetFace((i + 1) % 4);
+      auto opp_face = child_face_array.GetFace((i + 2) % 4);
+      auto prev_face = child_face_array.GetFace((i + 3) % 4);
 
       // First child face.
       const int n = child_face_array.GetNumberOfSides(i);
@@ -277,7 +272,7 @@ class Patch {
       std::copy(face, face + n, std::back_inserter(raw_child_face_array));
 
       // Next three generated faces.
-      const int n_prev = child_face_array.GetNumberOfSides((i + 3) % n_faces);
+      const int n_prev = child_face_array.GetNumberOfSides((i + 3) % 4);
 
       const int child_faces[][4] = {
         {face[0], face[modulo(-1, n)], next_face[1], next_face[0]},
@@ -307,10 +302,16 @@ class Patch {
       std::unique_ptr<Patch<Scalar>> child(new Patch<Scalar>(
         std::move(child_patch_array), this, _depth + 1));
 
-      // Build `child._S` and move to `_children`.
+      // Set the child subdivision matrix `_S` and subdivide if
+      // necessary.
+      // NOTE `Subdivide` is only called in `Initialise` for `_depth = 0` so
+      // this is all OK.
       child->_S.resize(child->_I.size(), S.cols());
       for (size_t i = 0; i < child->_I.size(); ++i) {
         child->_S.row(i) = S.row(child->_I[i]);
+      }
+      if (!child->_is_valid && child->_depth < kMaxSubdivisionDepth) {
+        child->Subdivide();
       }
 
       _children.push_back(std::move(child));
@@ -319,14 +320,14 @@ class Patch {
 
   // Evaluation
   template <typename F, typename G, typename E, typename U, typename TX, typename R>
-  void Evaluate(const U& u, const TX& X, R* r) {
+  void Evaluate(const U& u, const TX& X, R* r) const {
     Vector2 _u(u);
     assert(r != nullptr);
     return EvaluateInternal<F, G, E>(&_u, X, r);
   }
 
   template <typename F, typename G, typename E, typename TX, typename R>
-  void EvaluateInternal(Vector2* u, const TX& X, R* r) {
+  void EvaluateInternal(Vector2* u, const TX& X, R* r) const {
     if (_is_valid) {
       // Get the basis vector for the quantity ...
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
@@ -349,8 +350,6 @@ class Patch {
 
       return;
     }
-
-    Subdivide();
 
     assert(_depth <= (kMaxSubdivisionDepth - 1));
     if (_depth == (kMaxSubdivisionDepth - 1)) {
