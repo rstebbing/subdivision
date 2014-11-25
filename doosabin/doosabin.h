@@ -90,20 +90,18 @@ static const int kValidUOffsets[][2] = {{-1, -1},
 template <typename Scalar>
 class Patch;
 
-// InternalPatch
+// Patch
 template <typename Scalar>
-class InternalPatch {
+class Patch {
  public:
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
   typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
 
-  InternalPatch(const Patch<Scalar>* root,
-                const InternalPatch* parent,
-                size_t depth,
-                FaceArray&& face_array)
-    : _root(root),
-      _parent(parent),
+  Patch(FaceArray&& face_array,
+        const Patch* parent = nullptr,
+        size_t depth = 0)
+    : _parent(parent),
       _depth(depth),
       _face_array(std::move(face_array)) {
     Initialise();
@@ -305,12 +303,9 @@ class InternalPatch {
       child_face_permutation[3] = modulo(3 - static_cast<int>(i), 4);
       child_patch_array.PermuteFaces(child_face_permutation);
 
-      // Build `child` and propagate `_root`.
-      std::unique_ptr<InternalPatch<Scalar>> child(new InternalPatch<Scalar>(
-        _root,
-        this,
-        _depth + 1,
-        std::move(child_patch_array)));
+      // Build `child`.
+      std::unique_ptr<Patch<Scalar>> child(new Patch<Scalar>(
+        std::move(child_patch_array), this, _depth + 1));
 
       // Build `child._S` and move to `_children`.
       child->_S.resize(child->_I.size(), S.cols());
@@ -413,25 +408,15 @@ class InternalPatch {
   };
 
  protected:
-  const Patch<Scalar>* _root;
-  const InternalPatch<Scalar>* _parent;
-  size_t _depth;
   FaceArray _face_array;
+  const Patch<Scalar>* _parent;
+  size_t _depth;
 
   bool _is_valid;
   std::vector<int> _I;
 
-  std::vector<std::unique_ptr<InternalPatch<Scalar>>> _children;
+  std::vector<std::unique_ptr<Patch<Scalar>>> _children;
   Matrix _S;
-};
-
-// Patch
-template <typename Scalar>
-class Patch : public InternalPatch<Scalar> {
- public:
-  Patch(FaceArray&& face_array)
-    : InternalPatch<Scalar>(this, nullptr, 0, std::move(face_array))
-  {}
 };
 
 } // namespace doosabin
