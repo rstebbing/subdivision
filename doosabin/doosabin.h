@@ -100,17 +100,16 @@ class InternalPatch {
     : _root(root),
       _parent(parent),
       _depth(depth),
-      _face_array(std::move(face_array)),
-      _V_is_valid(false) {
+      _face_array(std::move(face_array)) {
     Initialise();
   }
 
   // EvaluatePosition
-  template <typename U, typename R>
-  void EvaluatePosition(const U& u, R* r) {
+  template <typename U, typename TX, typename R>
+  void EvaluatePosition(const U& u, const TX& X, R* r) {
     return Evaluate<uniform_quadratic_bspline::Position,
                     uniform_quadratic_bspline::Position,
-                    EvaluatePositionFunctor>(u, r);
+                    EvaluatePositionFunctor>(u, X, r);
   }
 
  protected:
@@ -319,15 +318,15 @@ class InternalPatch {
   }
 
   // Evaluation
-  template <typename F, typename G, typename E, typename U, typename R>
-  void Evaluate(const U& u, R* r) {
+  template <typename F, typename G, typename E, typename U, typename TX, typename R>
+  void Evaluate(const U& u, const TX& X, R* r) {
     Vector2 _u(u);
     assert(r != nullptr);
-    return EvaluateInternal<F, G, E>(&_u, r);
+    return EvaluateInternal<F, G, E>(&_u, X, r);
   }
 
-  template <typename F, typename G, typename E, typename R>
-  void EvaluateInternal(Vector2* u, R* r) {
+  template <typename F, typename G, typename E, typename TX, typename R>
+  void EvaluateInternal(Vector2* u, const TX& X, R* r) {
     if (_is_valid) {
       // Get the basis vector for the quantity ...
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
@@ -335,7 +334,7 @@ class InternalPatch {
 
       // ... and evaluate the required quantity.
       static const E e;
-      e(this, b, r);
+      e(this, X, b, r);
 
       return;
     }
@@ -350,7 +349,7 @@ class InternalPatch {
     }
 
     // Get child and translate `u` for child patch.
-    return _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, r);
+    return _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
   }
 
   void AdjustUForValidChild(Vector2* u) const {
@@ -392,28 +391,12 @@ class InternalPatch {
     return child_index;
   }
 
-  void InvalidateVertices() {
-    _V_is_valid = false;
-
-    for (auto& child : _children) {
-      child->InvalidateVertices();
-    }
-  }
-
-  const Matrix& V() {
-    if (!_V_is_valid) {
-      _V.noalias() = _root->Vertices() * _S.transpose();
-      _V_is_valid = true;
-    }
-
-    return _V;
-  }
-
   // EvaluatePosition
   struct EvaluatePositionFunctor {
-    template <typename B, typename R>
-    void operator()(InternalPatch<Scalar>* patch, const B& b, R* r) const {
-      r->noalias() = patch->V() * b;
+    template <typename TX, typename B, typename R>
+    void operator()(const InternalPatch<Scalar>* p,
+                    const TX& X, const B& b, R* r) const {
+      r->noalias() = X * p->_S.transpose() * b;
     }
   };
 
@@ -422,9 +405,6 @@ class InternalPatch {
   const InternalPatch<Scalar>* _parent;
   size_t _depth;
   FaceArray _face_array;
-
-  bool _V_is_valid;
-  Matrix _V;
 
   bool _is_valid;
   std::vector<int> _I;
@@ -440,17 +420,6 @@ class Patch : public InternalPatch<Scalar> {
   Patch(FaceArray&& face_array)
     : InternalPatch<Scalar>(this, nullptr, 0, std::move(face_array))
   {}
-
-  template <typename TV>
-  void SetVertices(const TV& V) {
-    this->InvalidateVertices();
-    _V_is_valid = true;
-    _V = V;
-  }
-
-  const Matrix& Vertices() const {
-    return _V;
-  }
 };
 
 } // namespace doosabin

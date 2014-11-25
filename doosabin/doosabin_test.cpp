@@ -281,12 +281,9 @@ int main() {
                                 Patch(doosabin::FaceArray(kT6))};
 
   for (int i = 0; i < kNumPatches; ++i) {
-    auto& p = patches[i];
-    p.SetVertices(*kXs[i]);
-
     for (MapConstMatrixXd::Index j = 0; j < kU.cols(); ++j) {
       Eigen::Vector3d r;
-      p.EvaluatePosition(kU.col(j), &r);
+      patches[i].EvaluatePosition(kU.col(j), *kXs[i], &r);
       if (!r.isApprox(kMs[i]->col(j), 1e-5)) {
         std::cerr << i << ", " << j << ": "
                   << r.transpose() << " != " << kMs[i]->col(j).transpose()
