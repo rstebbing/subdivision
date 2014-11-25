@@ -87,10 +87,6 @@ static const int kValidUOffsets[][2] = {{-1, -1},
                                         { 1,  1},
                                         { 1, -1}};
 
-// Patch (required forward declaration.)
-template <typename Scalar>
-class Patch;
-
 // Patch
 template <typename Scalar>
 class Patch {
