@@ -298,5 +298,32 @@ int main() {
   TEST_EVALUATION(Muu, kMuus);
   #undef TEST_EVALUATION
 
+  typedef doosabin::Surface<double> Surface;
+
+  #define MESH(T) (doosabin::GeneralMesh(std::vector<int>(T.GetCellArray())))
+  Surface surfaces[kNumPatches] = {Surface(MESH(kT3)),
+                                   Surface(MESH(kT4)),
+                                   Surface(MESH(kT5)),
+                                   Surface(MESH(kT6))};
+  #undef MESH
+
+  #define TEST_EVALUATION(M, MS) \
+  for (int i = 0; i < kNumPatches; ++i) { \
+    for (MapConstMatrixXd::Index j = 0; j < kU.cols(); ++j) { \
+      Eigen::Vector3d r; \
+      surfaces[i].M(0, kU.col(j), *kXs[i], &r); \
+      if (!r.isApprox(MS[i]->col(j), 1e-5)) { \
+        std::cerr << #M << " [" << i << ", " << j << "]: " \
+                  << r.transpose() << " != " << MS[i]->col(j).transpose() \
+                  << std::endl; \
+        return 1; \
+      } \
+    } \
+  }
+  TEST_EVALUATION(M, kMs);
+  TEST_EVALUATION(Mu, kMus);
+  TEST_EVALUATION(Muu, kMuus);
+  #undef TEST_EVALUATION
+
   return 0;
 }
