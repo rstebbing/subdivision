@@ -109,7 +109,7 @@ class InternalPatch {
   void EvaluatePosition(const U& u, const TX& X, R* r) {
     return Evaluate<uniform_quadratic_bspline::Position,
                     uniform_quadratic_bspline::Position,
-                    EvaluatePositionFunctor>(u, X, r);
+                    ScaleIdentity>(u, X, r);
   }
 
  protected:
@@ -332,9 +332,10 @@ class InternalPatch {
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
       BiquadraticBsplineBasis<F, G>(*u, &b);
 
-      // ... and evaluate the required quantity.
+      // ... and evaluate and scale accordingly.
+      r->noalias() = X * (_S.transpose() * b);
       static const E e;
-      e(this, X, b, r);
+      e(_depth, r);
 
       return;
     }
@@ -391,13 +392,9 @@ class InternalPatch {
     return child_index;
   }
 
-  // EvaluatePosition
-  struct EvaluatePositionFunctor {
-    template <typename TX, typename B, typename R>
-    void operator()(const InternalPatch<Scalar>* p,
-                    const TX& X, const B& b, R* r) const {
-      r->noalias() = X * p->_S.transpose() * b;
-    }
+  struct ScaleIdentity {
+    template <typename R>
+    inline void operator()(int, R*) const {}
   };
 
  protected:
