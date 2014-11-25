@@ -377,17 +377,17 @@ class Patch {
   int PassToChild(Vector2* u) const {
     int child_index;
     auto& _u = *u;
-    if (_u[0] >= Scalar(0.5)) {
+    if (_u[0] > Scalar(0.5)) {
       _u[0] -= Scalar(0.5);
 
-      if (_u[1] >= Scalar(0.5)) {
+      if (_u[1] > Scalar(0.5)) {
         _u[1] -= Scalar(0.5);
         child_index = 2;
       } else {
         child_index = 3;
       }
     } else {
-      if (_u[1] >= Scalar(0.5)) {
+      if (_u[1] > Scalar(0.5)) {
         _u[1] -= Scalar(0.5);
         child_index = 1;
       } else {
