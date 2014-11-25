@@ -110,13 +110,19 @@ class Patch {
     }
   }
 
-  // EvaluatePosition
-  template <typename U, typename TX, typename R>
-  void EvaluatePosition(const U& u, const TX& X, R* r) {
-    return Evaluate<uniform_quadratic_bspline::Position,
-                    uniform_quadratic_bspline::Position,
-                    ScaleIdentity>(u, X, r);
+  #define EVALUATE(M, F, G, S) \
+  template <typename U, typename TX, typename R> \
+  void M(const U& u, const TX& X, R* r) { \
+    return Evaluate<uniform_quadratic_bspline:: F, \
+                    uniform_quadratic_bspline:: G, S>(u, X, r); \
   }
+  EVALUATE(M, Position, Position, Scale<1>);
+  EVALUATE(Mu, FirstDerivative, Position, Scale<2>);
+  EVALUATE(Mv, Position, FirstDerivative, Scale<2>);
+  EVALUATE(Muu, SecondDerivative, Position, Scale<4>);
+  EVALUATE(Muv, FirstDerivative, FirstDerivative, Scale<4>);
+  EVALUATE(Mvv, Position, SecondDerivative, Scale<4>);
+  #undef EVALUATE
 
  private:
   // Initialise
@@ -401,9 +407,18 @@ class Patch {
     return child_index;
   }
 
-  struct ScaleIdentity {
+  template <int Exponent>
+  struct Scale {
     template <typename R>
-    inline void operator()(int, R*) const {}
+    inline void operator()(size_t depth, R* r) const {
+      *r *= pow(Scalar(Exponent), static_cast<int>(depth));
+    }
+  };
+
+  template <>
+  struct Scale<1> {
+    template <typename R>
+    inline void operator()(size_t, R*) const {}
   };
 
  private:
