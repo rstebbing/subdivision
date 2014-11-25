@@ -139,7 +139,7 @@ class Patch {
 
     // Reorder the vertex indices and face ordering in `_face_array`.
 
-    // Determine the common vertex `_i` for all faces and store in.
+    // Determine the common vertex `_i` for all faces.
     const int i = _face_array.FindCommonVertex();
     assert(i >= 0);
 
