@@ -92,6 +92,8 @@ static const int kValidUOffsets[][2] = {{-1, -1},
 template <typename Scalar>
 class Patch {
  public:
+  friend Surface<Scalar>;
+
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
   typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
@@ -126,6 +128,7 @@ class Patch {
   EVALUATE(Mx, Position, Position, MultiplyAndRepeat);
   #undef EVALUATE
 
+ private:
   size_t GetFaceIndexWithAdjacentVertex(int j) const {
     for (size_t i = 0; i < _face_array.GetNumberOfFaces(); ++i) {
       if (_face_array.GetFace(i)[1] == j) {
