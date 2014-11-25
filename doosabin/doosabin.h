@@ -119,12 +119,12 @@ class Patch {
     Evaluate<uniform_quadratic_bspline:: F, \
              uniform_quadratic_bspline:: G, S>(u, X, r); \
   }
-  EVALUATE(M, Position, Position, Scale<1>);
-  EVALUATE(Mu, FirstDerivative, Position, Scale<2>);
-  EVALUATE(Mv, Position, FirstDerivative, Scale<2>);
-  EVALUATE(Muu, SecondDerivative, Position, Scale<4>);
-  EVALUATE(Muv, FirstDerivative, FirstDerivative, Scale<4>);
-  EVALUATE(Mvv, Position, SecondDerivative, Scale<4>);
+  EVALUATE(M, Position, Position, MultiplyAndScale<1>);
+  EVALUATE(Mu, FirstDerivative, Position, MultiplyAndScale<2>);
+  EVALUATE(Mv, Position, FirstDerivative, MultiplyAndScale<2>);
+  EVALUATE(Muu, SecondDerivative, Position, MultiplyAndScale<4>);
+  EVALUATE(Muv, FirstDerivative, FirstDerivative, MultiplyAndScale<4>);
+  EVALUATE(Mvv, Position, SecondDerivative, MultiplyAndScale<4>);
   #undef EVALUATE
 
  private:
@@ -334,37 +334,22 @@ class Patch {
   template <typename F, typename G, typename E, typename TX, typename R>
   void EvaluateInternal(Vector2* u, const TX& X, R* r) const {
     if (_is_valid) {
-      // Get the basis vector for the quantity ...
+      // Get the basis vector for the quantity and evaluate.
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
       BiquadraticBsplineBasis<F, G>(*u, &b);
-
-      // and evaluate ...
-      if (_S.cols() <= kMaxNNoAlloc) {
-        Scalar StB_data[kMaxNNoAlloc];
-        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> StB(StB_data,
-                                                                 _S.cols());
-        StB.noalias() = _S.transpose() * b;
-        r->noalias() = X * StB;
-      } else {
-        r->noalias() = X * (_S.transpose() * b);
+      static const E e;
+      e(_depth, _S, b, X, r);
+    } else {
+      assert(_depth <= (kMaxSubdivisionDepth - 1));
+      if (_depth == (kMaxSubdivisionDepth - 1)) {
+        // On second to last level of subdivision, adjust `U` so that it falls
+        // within a valid patch.
+        AdjustUForValidChild(u);
       }
 
-      // and scale.
-      static const E e;
-      e(_depth, r);
-
-      return;
+      // Get child and translate `u` for child patch.
+      _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
     }
-
-    assert(_depth <= (kMaxSubdivisionDepth - 1));
-    if (_depth == (kMaxSubdivisionDepth - 1)) {
-      // On second to last level of subdivision, adjust `U` so that it falls
-      // within a valid patch.
-      AdjustUForValidChild(u);
-    }
-
-    // Get child and translate `u` for child patch.
-    return _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
   }
 
   void AdjustUForValidChild(Vector2* u) const {
@@ -407,17 +392,22 @@ class Patch {
   }
 
   template <int Exponent>
-  struct Scale {
-    template <typename R>
-    inline void operator()(size_t depth, R* r) const {
-      *r *= pow(Scalar(Exponent), static_cast<int>(depth));
+  struct MultiplyAndScale {
+    template <typename S, typename B, typename X, typename R>
+    inline void operator()(size_t depth, const S& S, const B& b, const X& X,
+                           R* r) const {
+      if (S.cols() <= kMaxNNoAlloc) {
+        Scalar StB_data[kMaxNNoAlloc];
+        Eigen::Map<Vector> StB(StB_data, S.cols());
+        StB.noalias() = S.transpose() * b;
+        r->noalias() = X * StB;
+      } else {
+        r->noalias() = X * (S.transpose() * b);
+      }
+      if (Exponent > 1) {
+        *r *= pow(Scalar(Exponent), static_cast<int>(depth));
+      }
     }
-  };
-
-  template <>
-  struct Scale<1> {
-    template <typename R>
-    inline void operator()(size_t, R*) const {}
   };
 
  private:
