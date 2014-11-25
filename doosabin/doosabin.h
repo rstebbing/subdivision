@@ -34,6 +34,7 @@ static const int kMaxNNoAlloc = 16;
 
 // Types.
 using face_array::FaceArray;
+using face_array::GeneralMesh;
 using modulo::modulo;
 
 // DooSabinWeights
@@ -455,6 +456,67 @@ class Patch {
   Matrix _S;
 
   std::vector<std::unique_ptr<Patch<Scalar>>> _children;
+};
+
+// Surface
+template <typename Scalar>
+class Surface {
+ public:
+  typedef Patch<Scalar> Patch;
+  typedef typename Patch::Matrix Matrix;
+  typedef typename Patch::Vector Vector;
+  typedef typename Patch::Vector2 Vector2;
+
+  Surface(GeneralMesh&& control_mesh)
+    : _control_mesh(std::move(control_mesh)) {
+    InitialisePatchIndices();
+    InitialisePatches();
+  }
+
+  #define EVALUATE(M) \
+  template <typename U, typename TX, typename R> \
+  void M(int p, const U& u, const TX& X, R* r) const { \
+    _patches[p]->M(u, X, r); \
+  }
+  EVALUATE(M);
+  EVALUATE(Mu);
+  EVALUATE(Mv);
+  EVALUATE(Muu);
+  EVALUATE(Muv);
+  EVALUATE(Mvv);
+  EVALUATE(Mx);
+  #undef EVALUATE
+
+ private:
+  void InitialisePatchIndices() {
+    int patch_index = 0;
+    auto& vertices = _control_mesh.GetVertices();
+    _vertex_to_patch_index.resize(vertices.size());
+    for (int i : vertices) {
+      if (_control_mesh.IsVertexClosed(i)) {
+        assert(_control_mesh.GetAdjacentVertices(i).size() == 4);
+        _patch_vertex_indices.push_back(i);
+        _vertex_to_patch_index[i] = patch_index++;
+      } else {
+        _vertex_to_patch_index[i] = -1;
+      }
+    }
+  }
+
+  void InitialisePatches() {
+    for (int i : _patch_vertex_indices) {
+      _patches.push_back(std::unique_ptr<Patch>(new Patch(
+          FaceArray(_control_mesh.GetCellArray(_control_mesh.GetFacesAtVertex(i)))
+        )));
+    }
+  }
+
+ private:
+  GeneralMesh _control_mesh;
+
+  std::vector<int> _patch_vertex_indices;
+  std::vector<int> _vertex_to_patch_index;
+  std::vector<std::unique_ptr<Patch>> _patches;
 };
 
 } // namespace doosabin
