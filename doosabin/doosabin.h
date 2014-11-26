@@ -501,13 +501,10 @@ class Surface {
   typedef typename Patch::Vector Vector;
   typedef typename Patch::Vector2 Vector2;
 
+  // Copy of `control_mesh` is required since mutable routines (e.g.
+  // `EnsureVertices`) are used.
   explicit Surface(const GeneralMesh& control_mesh)
       : _control_mesh(control_mesh) {
-    Initialise();
-  }
-
-  explicit Surface(GeneralMesh&& control_mesh)
-      : _control_mesh(std::move(control_mesh)) {
     Initialise();
   }
 
