@@ -23,10 +23,10 @@ namespace doosabin {
 
 // Constants.
 
-// `kMaxSubdivisionDepth` and `kValidUEpsilon` set the subdivision limit and
+// `kMaxSubdivisionDepth` and `kUEps` set the subdivision limit and
 // adjustment to coordinates on the penultimate subdivision level.
 static const size_t kMaxSubdivisionDepth = 10;
-static const double kValidUEpsilon = 1e-6;
+static const double kUEps = 1e-6;
 
 // For `N <= kMaxNNoAlloc`, the intermediate subdivided basis vector in
 // `EvaluateInternal` is stored on the stack. For `N > kMaxNNoAlloc`,
@@ -386,8 +386,8 @@ class Patch {
 
     for (size_t i = 0; i < _children.size(); ++i) {
       if (_children[i]->_is_valid) {
-        (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kValidUEpsilon);
-        (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kValidUEpsilon);
+        (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kUEps);
+        (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kUEps);
         return;
       }
     }
@@ -618,9 +618,9 @@ class Surface {
     for (size_t face_index = 0; face_index < _control_mesh.GetNumberOfFaces();
          ++face_index) {
       auto face = _control_mesh.GetFace(face_index);
-      int n = _control_mesh.GetNumberOfSides(face_index);
       current_face.clear();
-      std::copy(face, face + n, std::back_inserter(current_face));
+      std::copy(face, face + _control_mesh.GetNumberOfSides(face_index),
+                std::back_inserter(current_face));
 
       next_face.clear();
       next_face.push_back(0);
