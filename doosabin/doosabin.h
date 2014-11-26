@@ -658,6 +658,29 @@ class Surface {
     }
   }
 
+  // FIXME This should be `const` but `_control_mesh` needs mutation.
+  int number_of_vertices() {
+    return static_cast<int>(_control_mesh.GetVertices().size());
+  }
+
+  int number_of_faces() const {
+    return _control_mesh.GetNumberOfFaces();
+  }
+
+  // const std::vector<int>& face_vertex_indices(const int f) const;
+
+  int number_of_patches() const {
+    return static_cast<int>(_patch_vertex_indices.size());
+  }
+
+  const std::vector<int>& patch_vertex_indices(int p) const {
+    return _patches[p]->vertex_indices();
+  }
+
+  const std::vector<int>& adjacent_patch_indices(int p) const {
+    return _adjacent_patch_indices[p];
+  }
+
  private:
   void InitialisePatchIndices() {
     int patch_index = 0;
