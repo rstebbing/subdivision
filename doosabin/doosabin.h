@@ -132,6 +132,14 @@ class Patch {
   EVALUATE(Mx, Position, Position, MultiplyAndRepeat);
   #undef EVALUATE
 
+  const std::vector<int>& vertex_indices() const {
+    return _I;
+  }
+
+  const std::vector<size_t>& ordered_face_indices() const {
+    return _ordered_face_indices;
+  }
+
  private:
   size_t GetFaceIndexWithAdjacentVertex(int j) const {
     for (size_t i = 0; i < _face_array.GetNumberOfFaces(); ++i) {
