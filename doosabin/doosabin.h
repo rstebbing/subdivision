@@ -102,7 +102,7 @@ class Patch {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
   typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
 
-  Patch(FaceArray&& face_array,
+  explicit Patch(FaceArray&& face_array,
         const Patch* parent = nullptr,
         size_t depth = 0)
       : _parent(parent),
@@ -502,12 +502,12 @@ class Surface {
   typedef typename Patch::Vector Vector;
   typedef typename Patch::Vector2 Vector2;
 
-  Surface(const GeneralMesh& control_mesh)
+  explicit Surface(const GeneralMesh& control_mesh)
       : _control_mesh(control_mesh) {
     Initialise();
   }
 
-  Surface(GeneralMesh&& control_mesh)
+  explicit Surface(GeneralMesh&& control_mesh)
       : _control_mesh(std::move(control_mesh)) {
     Initialise();
   }
