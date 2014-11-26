@@ -179,16 +179,15 @@ class Patch {
     const size_t n_faces = _face_array.GetNumberOfFaces();
     size_t faces_remaining = n_faces;
 
-    std::vector<size_t> ordered_face_indices;
-    ordered_face_indices.reserve(n_faces);
+    _ordered_face_indices.reserve(n_faces);
 
     // Order first face.
     _face_array.RotateFaceToVertex(0, i);
-    ordered_face_indices.push_back(0);
+    _ordered_face_indices.push_back(0);
 
     // Order remaining faces.
     while (--faces_remaining) {
-      size_t last_face_index = ordered_face_indices.back();
+      size_t last_face_index = _ordered_face_indices.back();
       int n = _face_array.GetNumberOfSides(last_face_index);
       auto p = _face_array.GetFace(last_face_index);
       const int last_vertex = p[n - 1];
@@ -216,10 +215,10 @@ class Patch {
       assert(next_face_index != std::numeric_limits<size_t>::max());
 
       _face_array.RotateFaceToVertex(next_face_index, i);
-      ordered_face_indices.push_back(next_face_index);
+      _ordered_face_indices.push_back(next_face_index);
     }
 
-    _face_array.PermuteFaces(ordered_face_indices);
+    _face_array.PermuteFaces(_ordered_face_indices);
 
     // Construct `_I` from the reordered `_face_array`.
     _I.push_back(i);
@@ -478,6 +477,7 @@ class Patch {
   size_t _depth;
 
   bool _is_valid;
+  std::vector<size_t> _ordered_face_indices;
   std::vector<int> _I;
 
   Matrix _S;
