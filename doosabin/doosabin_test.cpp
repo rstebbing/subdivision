@@ -325,5 +325,21 @@ int main() {
   TEST_EVALUATION(Muu, kMuus);
   #undef TEST_EVALUATION
 
+  // Independent `Surface` verification.
+  static const int kTSurface[] = {8,
+                                  4, 0, 1, 5, 4,
+                                  4, 1, 2, 6, 5,
+                                  4, 2, 3, 7, 6,
+                                  3, 3, 8, 7,
+                                  4, 4, 5, 10, 9,
+                                  4, 5, 6, 11, 10,
+                                  4, 6, 7, 12, 11,
+                                  4, 7, 8, 13, 12};
+  std::vector<int> surface_cell_array;
+  std::copy(kTSurface,
+            kTSurface + sizeof(kTSurface) / sizeof(kTSurface[0]),
+            std::back_inserter(surface_cell_array));
+  Surface surface(doosabin::GeneralMesh(std::move(surface_cell_array)));
+
   return 0;
 }
