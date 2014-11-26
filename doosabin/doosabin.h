@@ -682,6 +682,7 @@ class Surface {
 
  private:
   void InitialisePatchIndices() {
+    // FIXME This is assuming contiguous vertex labelling starting at 0.
     _control_mesh.EnsureVertices();
     auto& vertices = _control_mesh.vertices();
     _vertex_to_patch_index.resize(vertices.size());
