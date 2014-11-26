@@ -712,6 +712,7 @@ class Surface {
     std::map<int, std::vector<std::pair<int, int>>> vertex_to_half_edges;
     std::map<std::pair<int, int>, int> half_edge_to_vertex;
 
+    _patches.reserve(_patch_vertex_indices.size());
     for (int i : _patch_vertex_indices) {
       // Initialise `patch`.
       std::vector<int> face_indices = _control_mesh.FacesAtVertex(i);
