@@ -102,12 +102,12 @@ class Patch {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
   typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
 
-  explicit Patch(FaceArray&& face_array,
+  explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
         size_t depth = 0)
       : _parent(parent),
         _depth(depth),
-        _face_array(std::move(face_array)) {
+        _face_array(face_array) {
     Initialise();
     if (_depth == 0) {
       _S.setIdentity(_I.size(), _I.size());
@@ -142,8 +142,8 @@ class Patch {
 
  private:
   size_t GetFaceIndexWithAdjacentVertex(int j) const {
-    for (size_t i = 0; i < _face_array.number_of_faces(); ++i) {
-      if (_face_array.face(i)[1] == j) {
+    for (size_t i = 0; i < _face_array->number_of_faces(); ++i) {
+      if (_face_array->face(i)[1] == j) {
         return i;
       }
     }
@@ -154,7 +154,7 @@ class Patch {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
       size_t j = std::distance(face.begin(), it);
-      int half_edge = _face_array.FindHalfEdge(
+      int half_edge = _face_array->FindHalfEdge(
         _I[0], face[(j + 1) % face.size()]);
       if (half_edge >= 0) {
         return half_edge;
@@ -167,10 +167,10 @@ class Patch {
   // Initialise
   void Initialise() {
     // Set `_is_valid`.
-    assert(_face_array.number_of_faces() == 4);
+    assert(_face_array->number_of_faces() == 4);
     _is_valid = true;
-    for (size_t j = 0; j < _face_array.number_of_faces(); ++j) {
-      if (_face_array.number_of_sides(j) != 4) {
+    for (size_t j = 0; j < _face_array->number_of_faces(); ++j) {
+      if (_face_array->number_of_sides(j) != 4) {
         _is_valid = false;
         break;
       }
@@ -179,33 +179,33 @@ class Patch {
     // Reorder the vertex indices and face ordering in `_face_array`.
 
     // Determine the common vertex `i` for all faces.
-    const int i = _face_array.FindCommonVertex();
+    const int i = _face_array->FindCommonVertex();
     assert(i >= 0);
 
     // Order the vertices in each face so that `i` is the first vertex.
     // Order the faces to also respect the vertex ordering.
-    const size_t n_faces = _face_array.number_of_faces();
+    const size_t n_faces = _face_array->number_of_faces();
     size_t faces_remaining = n_faces;
 
     _ordered_face_indices.reserve(n_faces);
 
     // Order first face.
-    _face_array.RotateFaceToVertex(0, i);
+    _face_array->RotateFaceToVertex(0, i);
     _ordered_face_indices.push_back(0);
 
     // Order remaining faces.
     while (--faces_remaining) {
       size_t last_face_index = _ordered_face_indices.back();
-      int n = _face_array.number_of_sides(last_face_index);
-      auto* f = _face_array.face(last_face_index);
+      int n = _face_array->number_of_sides(last_face_index);
+      auto* f = _face_array->face(last_face_index);
       const int last_vertex = f[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
       size_t next_face_index = std::numeric_limits<size_t>::max();
 
       for (size_t j = 0; j < n_faces; ++j) {
-        n = _face_array.number_of_sides(j);
-        f = _face_array.face(j);
+        n = _face_array->number_of_sides(j);
+        f = _face_array->face(j);
 
         for (int k = 0; k < n; ++k) {
           if (i == f[k] && last_vertex == f[(k + 1) % n]) {
@@ -222,18 +222,18 @@ class Patch {
       // Ensure the half edge was found.
       assert(next_face_index != std::numeric_limits<size_t>::max());
 
-      _face_array.RotateFaceToVertex(next_face_index, i);
+      _face_array->RotateFaceToVertex(next_face_index, i);
       _ordered_face_indices.push_back(next_face_index);
     }
 
-    _face_array.PermuteFaces(_ordered_face_indices);
+    _face_array->PermuteFaces(_ordered_face_indices);
 
     // Construct `_I` from the reordered `_face_array`.
     _I.push_back(i);
 
-    for (size_t j = 0; j < _face_array.number_of_faces(); ++j) {
-      int n = _face_array.number_of_sides(j);
-      auto* f = _face_array.face(j);
+    for (size_t j = 0; j < _face_array->number_of_faces(); ++j) {
+      int n = _face_array->number_of_sides(j);
+      auto* f = _face_array->face(j);
       std::copy(f + 1, f + n - 1, std::back_inserter(_I));
     }
   }
@@ -243,7 +243,7 @@ class Patch {
     // Create `S` to include all of the child vertices.
     size_t n_child_vertices = 0;
     for (size_t i = 0; i < 4; ++i) {
-      n_child_vertices += _face_array.number_of_sides(i);
+      n_child_vertices += _face_array->number_of_sides(i);
     }
 
     Matrix S(n_child_vertices, _I.size());
@@ -253,13 +253,13 @@ class Patch {
     int child_index = 0;
     for (size_t i = 0; i < 4; ++i) {
       // Get subdivision weights of face `i` with `n` vertices.
-      const int n = _face_array.number_of_sides(i);
+      const int n = _face_array->number_of_sides(i);
       Vector w;
       DooSabinWeights(n, &w);
 
       // Get `face_indices_in_I`.
       std::vector<size_t> face_indices_in_I(n);
-      auto f = _face_array.face(i);
+      auto f = _face_array->face(i);
 
       for (int j = 0; j < n; ++j) {
         // Find index of vertex `f[j]` in `_I`.
@@ -287,7 +287,7 @@ class Patch {
     std::vector<int> raw_child_face_array;
     raw_child_face_array.push_back(4);
     for (size_t i = 0; i < 4; ++i) {
-      int n = _face_array.number_of_sides(i);
+      int n = _face_array->number_of_sides(i);
       raw_child_face_array.push_back(n);
 
       for (int j = 0; j < n; ++j) {
@@ -328,7 +328,7 @@ class Patch {
       }
 
       // Build `child_patch_array`.
-      FaceArray child_patch_array(std::move(raw_child_face_array));
+      auto child_patch_array = new FaceArray(std::move(raw_child_face_array));
 
       // Permute the patch faces to preserve `u` directionality.
       std::vector<int> child_face_permutation(4);
@@ -336,11 +336,10 @@ class Patch {
       child_face_permutation[1] = modulo(1 - i, 4);
       child_face_permutation[2] = modulo(2 - i, 4);
       child_face_permutation[3] = modulo(3 - i, 4);
-      child_patch_array.PermuteFaces(child_face_permutation);
+      child_patch_array->PermuteFaces(child_face_permutation);
 
       // Build `child`.
-      std::unique_ptr<Patch<Scalar>> child(new Patch<Scalar>(
-        std::move(child_patch_array), this, _depth + 1));
+      auto child = new Patch<Scalar>(child_patch_array, this, _depth + 1);
 
       // Set the child subdivision matrix `_S` and subdivide if
       // necessary.
@@ -354,7 +353,7 @@ class Patch {
         child->Subdivide();
       }
 
-      _children.push_back(std::move(child));
+      _children.emplace_back(child);
     }
   }
 
@@ -480,7 +479,7 @@ class Patch {
   };
 
  private:
-  FaceArray _face_array;
+  std::unique_ptr<FaceArray> _face_array;
   const Patch<Scalar>* _parent;
   size_t _depth;
 
@@ -716,9 +715,7 @@ class Surface {
     for (int i : _patch_vertex_indices) {
       // Initialise `patch`.
       std::vector<int> face_indices = _control_mesh.FacesAtVertex(i);
-      auto patch = std::unique_ptr<Patch>(new Patch(FaceArray(
-          _control_mesh.Faces(face_indices)
-        )));
+      auto patch = new Patch(new FaceArray(_control_mesh.Faces(face_indices)));
 
       // Get the permuted face indices.
       std::vector<int> permuted_face_indices;
@@ -737,7 +734,7 @@ class Surface {
       }
 
       // Save the generated patch.
-      _patches.push_back(std::move(patch));
+      _patches.emplace_back(patch);
     }
 
     // Set `_adjacent_patch_indices`.
