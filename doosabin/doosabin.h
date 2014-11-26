@@ -25,6 +25,7 @@ namespace doosabin {
 
 // `kMaxSubdivisionDepth` and `kUEps` set the subdivision limit and
 // adjustment to coordinates on the penultimate subdivision level.
+// `kUEps` is also used by `ApplyDisplacement` in `Surface`.
 static const size_t kMaxSubdivisionDepth = 10;
 static const double kUEps = 1e-6;
 
@@ -647,6 +648,76 @@ class Surface {
         ++T_[0];
       }
     }
+  }
+
+  template <typename TX, typename Delta, typename U>
+  bool ApplyDisplacement(const TX& X, const Delta& delta, int* p, U* u,
+                         int max_num_iterations,
+                         bool verbose = false) const {
+    static const Scalar P_data[8] = {0, 0,
+                                     1, 0,
+                                     1, 1,
+                                     0, 1};
+    static const Eigen::Map<const Eigen::Matrix<Scalar, 2, 4>> P(P_data);
+
+    Vector2 _u(*u), _delta(delta);
+    int _p = *p;
+
+    int iteration;
+    for (iteration = 0; iteration < max_num_iterations; ++iteration) {
+      // Determine which edge was broken by applying `_delta` to `_u`.
+      // TODO Add comment to illustrate edge ordering.
+      Matrix2f A;
+      A.col(0) = _delta;
+
+      int num_valid_intersections = 0;
+      Vector2 valid_intersections[4];
+      int arg_valid_intersections[4];
+
+      for (int i = 0; i < 4; ++i) {
+        Vector2f m = P.col((i + 1) % 4) - P.col(i);
+        A.col(1) = -m;
+
+        Matrix2f A_I = A.inverse();
+        Vector2f v = A_I * (P.col(i) - x);
+        if (Scalar(-kUEps) <= v[0] && v[1] <= Scalar(1 + kUEps) && 
+            Scalar(-kUEps) <= v[0] && v[1] <= Scalar(1 + kUEps)) {
+          if ((_delta[0] * m[1] - m[0] * delta[1]) > 0) {
+            valid_intersections[num_valid_intersections] = v;
+            arg_valid_intersections[num_valid_intersections++] = i;
+          }
+        }
+      }
+
+      // If no edge was broken then apply the displacement directly ...
+      if (num_valid_intersections <= 0) {
+        _u.noalias() += _delta;
+        break;
+      }
+      // Otherwise determine index of intersection with the largest
+      // displacement.
+      // TODO This loop could be removed by only retaining the intersection
+      // with the largest `t` in the first place ...
+      int index_of_valid_intersection = 0;
+      if (num_valid_intersections > 1) {
+        Scalar max_t(-1);
+        for (int i = 0; i < num_valid_intersections; ++i) {
+          if (valid_intersections[i][0] > max_t) {
+            max_t = valid_intersections[i][0];
+            index_of_valid_intersection = i;
+          }
+        }
+      }
+
+      // Update `u`.
+      Scalar t(valid_intersections[index_of_valid_intersection][0]);
+      _u.noalias() += t * _delta;
+      int edge_index = arg_valid_intersections[index_of_valid_intersection];
+    }
+
+    *p = _p;
+    *u = _u;
+    return iteration < max_num_iterations;
   }
 
  private:
