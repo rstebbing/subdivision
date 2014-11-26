@@ -502,10 +502,14 @@ class Surface {
   typedef typename Patch::Vector Vector;
   typedef typename Patch::Vector2 Vector2;
 
+  Surface(const GeneralMesh& control_mesh)
+      : _control_mesh(control_mesh) {
+    Initialise();
+  }
+
   Surface(GeneralMesh&& control_mesh)
       : _control_mesh(std::move(control_mesh)) {
-    InitialisePatchIndices();
-    InitialisePatches();
+    Initialise();
   }
 
   #define EVALUATE(M) \
@@ -681,6 +685,11 @@ class Surface {
   }
 
  private:
+  void Initialise() {
+    InitialisePatchIndices();
+    InitialisePatches();
+  }
+
   void InitialisePatchIndices() {
     // FIXME This is assuming contiguous vertex labelling starting at 0.
     _control_mesh.EnsureVertices();
