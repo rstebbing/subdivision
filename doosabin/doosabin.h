@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -674,10 +675,49 @@ class Surface {
   }
 
   void InitialisePatches() {
+    std::map<int, std::vector<std::pair<int, int>>> vertex_to_half_edges;
+    std::map<std::pair<int, int>, int> half_edge_to_vertex;
+
     for (int i : _patch_vertex_indices) {
-      _patches.push_back(std::unique_ptr<Patch>(new Patch(FaceArray(
-          _control_mesh.GetCellArray(_control_mesh.GetFacesAtVertex(i))
-        ))));
+      // Initialise `patch`.
+      std::vector<int> face_indices = _control_mesh.GetFacesAtVertex(i);
+      auto patch = std::unique_ptr<Patch>(new Patch(FaceArray(
+          _control_mesh.GetCellArray(face_indices)
+        )));
+
+      // Get the permuted face indices.
+      std::vector<int> permuted_face_indices;
+      permuted_face_indices.reserve(face_indices.size());
+      for (size_t j : patch->ordered_face_indices()) {
+        permuted_face_indices.push_back(face_indices[j]);
+      }
+      assert(permuted_face_indices.size() == 4);
+
+      // A "half edge" is an ordered pair, where each entry is a face index.
+      for (size_t j = 0; j < 4; ++j) {
+        auto half_edge = std::make_pair(permuted_face_indices[j],
+                                        permuted_face_indices[(j + 1) % 4]);
+        vertex_to_half_edges[i].push_back(half_edge);
+        half_edge_to_vertex[half_edge] = i;
+      }
+
+      // Save the generated patch.
+      _patches.push_back(std::move(patch));
+    }
+
+    // Set `_adjacent_patch_indices`.
+    _adjacent_patch_indices.resize(_control_mesh.GetVertices().size());
+    for (int i : _patch_vertex_indices) {
+      for (auto& half_edge : vertex_to_half_edges[i]) {
+        auto opposite_half_edge = std::make_pair(half_edge.second,
+                                                 half_edge.first);
+        int adj_patch_index = -1;
+        auto it = half_edge_to_vertex.find(opposite_half_edge);
+        if (it != half_edge_to_vertex.end()) {
+          adj_patch_index = _vertex_to_patch_index[it->second];
+        }
+        _adjacent_patch_indices[i].push_back(adj_patch_index);
+      }
     }
   }
 
@@ -686,6 +726,7 @@ class Surface {
 
   std::vector<int> _patch_vertex_indices;
   std::vector<int> _vertex_to_patch_index;
+  std::vector<std::vector<int>> _adjacent_patch_indices;
   std::vector<std::unique_ptr<Patch>> _patches;
 };
 
