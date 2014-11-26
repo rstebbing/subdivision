@@ -275,10 +275,10 @@ const MapConstMatrixXd* kMuus[kNumPatches] = {&kMuu3, &kMuu4, &kMuu5, &kMuu6};
 int main() {
   typedef doosabin::Patch<double> Patch;
 
-  Patch patches[kNumPatches] = {Patch(doosabin::FaceArray(kT3)),
-                                Patch(doosabin::FaceArray(kT4)),
-                                Patch(doosabin::FaceArray(kT5)),
-                                Patch(doosabin::FaceArray(kT6))};
+  Patch patches[kNumPatches] = {Patch(new doosabin::FaceArray(kT3)),
+                                Patch(new doosabin::FaceArray(kT4)),
+                                Patch(new doosabin::FaceArray(kT5)),
+                                Patch(new doosabin::FaceArray(kT6))};
 
   #define TEST_EVALUATION(M, MS) \
   for (int i = 0; i < kNumPatches; ++i) { \
@@ -300,7 +300,7 @@ int main() {
 
   typedef doosabin::Surface<double> Surface;
 
-  #define MESH(T) (doosabin::GeneralMesh(std::vector<int>(T.GetCellArray())))
+  #define MESH(T) (doosabin::GeneralMesh(T.cell_array()))
   Surface surfaces[kNumPatches] = {Surface(MESH(kT3)),
                                    Surface(MESH(kT4)),
                                    Surface(MESH(kT5)),
@@ -335,11 +335,26 @@ int main() {
                                   4, 5, 6, 11, 10,
                                   4, 6, 7, 12, 11,
                                   4, 7, 8, 13, 12};
-  std::vector<int> surface_cell_array;
+  std::vector<int> mesh_cell_array;
   std::copy(kTSurface,
             kTSurface + sizeof(kTSurface) / sizeof(kTSurface[0]),
-            std::back_inserter(surface_cell_array));
-  Surface surface(doosabin::GeneralMesh(std::move(surface_cell_array)));
+            std::back_inserter(mesh_cell_array));
+  doosabin::GeneralMesh mesh(std::move(mesh_cell_array));
+
+  std::cout << "mesh.iterate_half_edges(): " << std::endl;
+  for (auto& i : mesh.iterate_half_edges()) {
+    std::cout << " (" << i.first << ", " << i.second << ")" << std::endl;
+  }
+
+  std::cout << "mesh.NRing(6, 2): ";
+  for (int i : mesh.NRing(6, 2)) {
+    std::cout << i << " ";
+  }
+  std::cout << std::endl;
+
+  Surface surface(mesh);
+
+  std::cout << "surface.number_of_vertices(): " << surface.number_of_vertices() << std::endl;
 
   return 0;
 }
