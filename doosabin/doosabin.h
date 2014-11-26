@@ -13,8 +13,7 @@
 
 #include "Eigen/Dense"
 
-// TODO Move these to common.
-#include "Mesh/face_array.h"
+#include "Mesh/general_mesh.h"
 #include "Math/modulo.h"
 
 #include "uniform_quadratic_bspline.h"
@@ -35,9 +34,9 @@ static const double kUEps = 1e-6;
 static const int kMaxNNoAlloc = 16;
 
 // Types.
-using face_array::FaceArray;
-using face_array::GeneralMesh;
-using modulo::modulo;
+using mesh::FaceArray;
+using mesh::GeneralMesh;
+using math::modulo;
 
 // DooSabinWeights
 template <typename Weights>
@@ -137,14 +136,14 @@ class Patch {
     return _I;
   }
 
-  const std::vector<size_t>& ordered_face_indices() const {
+  const std::vector<int>& ordered_face_indices() const {
     return _ordered_face_indices;
   }
 
  private:
   size_t GetFaceIndexWithAdjacentVertex(int j) const {
-    for (size_t i = 0; i < _face_array.GetNumberOfFaces(); ++i) {
-      if (_face_array.GetFace(i)[1] == j) {
+    for (size_t i = 0; i < _face_array.number_of_faces(); ++i) {
+      if (_face_array.face(i)[1] == j) {
         return i;
       }
     }
@@ -168,10 +167,10 @@ class Patch {
   // Initialise
   void Initialise() {
     // Set `_is_valid`.
-    assert(_face_array.GetNumberOfFaces() == 4);
+    assert(_face_array.number_of_faces() == 4);
     _is_valid = true;
-    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
-      if (_face_array.GetNumberOfSides(j) != 4) {
+    for (size_t j = 0; j < _face_array.number_of_faces(); ++j) {
+      if (_face_array.number_of_sides(j) != 4) {
         _is_valid = false;
         break;
       }
@@ -185,7 +184,7 @@ class Patch {
 
     // Order the vertices in each face so that `i` is the first vertex.
     // Order the faces to also respect the vertex ordering.
-    const size_t n_faces = _face_array.GetNumberOfFaces();
+    const size_t n_faces = _face_array.number_of_faces();
     size_t faces_remaining = n_faces;
 
     _ordered_face_indices.reserve(n_faces);
@@ -197,19 +196,19 @@ class Patch {
     // Order remaining faces.
     while (--faces_remaining) {
       size_t last_face_index = _ordered_face_indices.back();
-      int n = _face_array.GetNumberOfSides(last_face_index);
-      auto p = _face_array.GetFace(last_face_index);
-      const int last_vertex = p[n - 1];
+      int n = _face_array.number_of_sides(last_face_index);
+      auto* f = _face_array.face(last_face_index);
+      const int last_vertex = f[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
       size_t next_face_index = std::numeric_limits<size_t>::max();
 
       for (size_t j = 0; j < n_faces; ++j) {
-        n = _face_array.GetNumberOfSides(j);
-        p = _face_array.GetFace(j);
+        n = _face_array.number_of_sides(j);
+        f = _face_array.face(j);
 
         for (int k = 0; k < n; ++k) {
-          if (i == p[k] && last_vertex == p[(k + 1) % n]) {
+          if (i == f[k] && last_vertex == f[(k + 1) % n]) {
             next_face_index = j;
             break;
           }
@@ -232,10 +231,10 @@ class Patch {
     // Construct `_I` from the reordered `_face_array`.
     _I.push_back(i);
 
-    for (size_t j = 0; j < _face_array.GetNumberOfFaces(); ++j) {
-      const int n = _face_array.GetNumberOfSides(j);
-      auto p = _face_array.GetFace(j);
-      std::copy(p + 1, p + n - 1, std::back_inserter(_I));
+    for (size_t j = 0; j < _face_array.number_of_faces(); ++j) {
+      int n = _face_array.number_of_sides(j);
+      auto* f = _face_array.face(j);
+      std::copy(f + 1, f + n - 1, std::back_inserter(_I));
     }
   }
 
@@ -244,7 +243,7 @@ class Patch {
     // Create `S` to include all of the child vertices.
     size_t n_child_vertices = 0;
     for (size_t i = 0; i < 4; ++i) {
-      n_child_vertices += _face_array.GetNumberOfSides(i);
+      n_child_vertices += _face_array.number_of_sides(i);
     }
 
     Matrix S(n_child_vertices, _I.size());
@@ -254,17 +253,17 @@ class Patch {
     int child_index = 0;
     for (size_t i = 0; i < 4; ++i) {
       // Get subdivision weights of face `i` with `n` vertices.
-      const int n = _face_array.GetNumberOfSides(i);
+      const int n = _face_array.number_of_sides(i);
       Vector w;
       DooSabinWeights(n, &w);
 
       // Get `face_indices_in_I`.
       std::vector<size_t> face_indices_in_I(n);
-      auto p = _face_array.GetFace(i);
+      auto f = _face_array.face(i);
 
       for (int j = 0; j < n; ++j) {
-        // Find index of vertex `p[j]` in `_I`.
-        auto it = std::find(_I.begin(), _I.end(), p[j]);
+        // Find index of vertex `f[j]` in `_I`.
+        auto it = std::find(_I.begin(), _I.end(), f[j]);
         assert(it != _I.end());
         face_indices_in_I[j] = std::distance(_I.begin(), it);
       }
@@ -288,7 +287,7 @@ class Patch {
     std::vector<int> raw_child_face_array;
     raw_child_face_array.push_back(4);
     for (size_t i = 0; i < 4; ++i) {
-      int n = _face_array.GetNumberOfSides(i);
+      int n = _face_array.number_of_sides(i);
       raw_child_face_array.push_back(n);
 
       for (int j = 0; j < n; ++j) {
@@ -302,18 +301,18 @@ class Patch {
       // Four child faces are created because patch has valency four.
       raw_child_face_array.push_back(4);
 
-      auto face = child_face_array.GetFace(i);
-      auto next_face = child_face_array.GetFace((i + 1) % 4);
-      auto opp_face = child_face_array.GetFace((i + 2) % 4);
-      auto prev_face = child_face_array.GetFace((i + 3) % 4);
+      auto face = child_face_array.face(i);
+      auto next_face = child_face_array.face((i + 1) % 4);
+      auto opp_face = child_face_array.face((i + 2) % 4);
+      auto prev_face = child_face_array.face((i + 3) % 4);
 
       // First child face.
-      const int n = child_face_array.GetNumberOfSides(i);
+      const int n = child_face_array.number_of_sides(i);
       raw_child_face_array.push_back(n);
       std::copy(face, face + n, std::back_inserter(raw_child_face_array));
 
       // Next three generated faces.
-      const int n_prev = child_face_array.GetNumberOfSides((i + 3) % 4);
+      const int n_prev = child_face_array.number_of_sides((i + 3) % 4);
 
       const int child_faces[][4] = {
         {face[0], face[modulo(-1, n)], next_face[1], next_face[0]},
@@ -332,7 +331,7 @@ class Patch {
       FaceArray child_patch_array(std::move(raw_child_face_array));
 
       // Permute the patch faces to preserve `u` directionality.
-      std::vector<size_t> child_face_permutation(4);
+      std::vector<int> child_face_permutation(4);
       child_face_permutation[0] = modulo(0 - i, 4);
       child_face_permutation[1] = modulo(1 - i, 4);
       child_face_permutation[2] = modulo(2 - i, 4);
@@ -486,7 +485,7 @@ class Patch {
   size_t _depth;
 
   bool _is_valid;
-  std::vector<size_t> _ordered_face_indices;
+  std::vector<int> _ordered_face_indices;
   std::vector<int> _I;
 
   Matrix _S;
@@ -588,10 +587,10 @@ class Surface {
       int i = _patch_vertex_indices[i_index];
       int i_offset = static_cast<int>(i_index) * (N * N);
 
-      for (int half_edge_index : _control_mesh.GetHalfEdgesFromVertex(i)) {
+      for (int half_edge_index : _control_mesh.half_edges_from_vertex(i)) {
         // Find adjacent patch at vertex `j` (with patch offset `j_offset`).
         // Skip if `i < j` so that the boundary is only processed once.
-        int j = _control_mesh.GetHalfEdge(half_edge_index, 1);
+        int j = _control_mesh.half_edge(half_edge_index).second;
         if (i < j) {
           continue;
         }
@@ -624,11 +623,11 @@ class Surface {
     // Add faces at corners of patches.
     std::vector<int> current_face, next_face;
 
-    for (size_t face_index = 0; face_index < _control_mesh.GetNumberOfFaces();
+    for (size_t face_index = 0; face_index < _control_mesh.number_of_faces();
          ++face_index) {
-      auto face = _control_mesh.GetFace(face_index);
+      auto f = _control_mesh.face(face_index);
       current_face.clear();
-      std::copy(face, face + _control_mesh.GetNumberOfSides(face_index),
+      std::copy(f, f + _control_mesh.number_of_sides(face_index),
                 std::back_inserter(current_face));
 
       next_face.clear();
@@ -660,11 +659,11 @@ class Surface {
 
   // FIXME This should be `const` but `_control_mesh` needs mutation.
   int number_of_vertices() {
-    return static_cast<int>(_control_mesh.GetVertices().size());
+    return _control_mesh.number_of_vertices();
   }
 
   int number_of_faces() const {
-    return _control_mesh.GetNumberOfFaces();
+    return _control_mesh.number_of_faces();
   }
 
   // const std::vector<int>& face_vertex_indices(const int f) const;
@@ -683,12 +682,14 @@ class Surface {
 
  private:
   void InitialisePatchIndices() {
-    int patch_index = 0;
-    auto& vertices = _control_mesh.GetVertices();
+    _control_mesh.EnsureVertices();
+    auto& vertices = _control_mesh.vertices();
     _vertex_to_patch_index.resize(vertices.size());
+
+    int patch_index = 0;
     for (int i : vertices) {
-      if (_control_mesh.IsVertexClosed(i)) {
-        assert(_control_mesh.GetAdjacentVertices(i).size() == 4);
+      if (_control_mesh.is_vertex_closed(i)) {
+        assert(_control_mesh.AdjacentVertices(i).size() == 4);
         _patch_vertex_indices.push_back(i);
         _vertex_to_patch_index[i] = patch_index++;
       } else {
@@ -703,9 +704,9 @@ class Surface {
 
     for (int i : _patch_vertex_indices) {
       // Initialise `patch`.
-      std::vector<int> face_indices = _control_mesh.GetFacesAtVertex(i);
+      std::vector<int> face_indices = _control_mesh.FacesAtVertex(i);
       auto patch = std::unique_ptr<Patch>(new Patch(FaceArray(
-          _control_mesh.GetCellArray(face_indices)
+          _control_mesh.Faces(face_indices)
         )));
 
       // Get the permuted face indices.
@@ -729,7 +730,8 @@ class Surface {
     }
 
     // Set `_adjacent_patch_indices`.
-    _adjacent_patch_indices.resize(_control_mesh.GetVertices().size());
+    _control_mesh.EnsureVertices();
+    _adjacent_patch_indices.resize(_control_mesh.number_of_vertices());
     for (int i : _patch_vertex_indices) {
       for (auto& half_edge : vertex_to_half_edges[i]) {
         auto opposite_half_edge = std::make_pair(half_edge.second,
