@@ -105,9 +105,9 @@ class Patch {
   Patch(FaceArray&& face_array,
         const Patch* parent = nullptr,
         size_t depth = 0)
-    : _parent(parent),
-      _depth(depth),
-      _face_array(std::move(face_array)) {
+      : _parent(parent),
+        _depth(depth),
+        _face_array(std::move(face_array)) {
     Initialise();
     if (_depth == 0) {
       _S.setIdentity(_I.size(), _I.size());
@@ -503,7 +503,7 @@ class Surface {
   typedef typename Patch::Vector2 Vector2;
 
   Surface(GeneralMesh&& control_mesh)
-    : _control_mesh(std::move(control_mesh)) {
+      : _control_mesh(std::move(control_mesh)) {
     InitialisePatchIndices();
     InitialisePatches();
   }
