@@ -25,7 +25,7 @@ namespace doosabin {
 
 // `kMaxSubdivisionDepth` and `kUEps` set the subdivision limit and
 // adjustment to coordinates on the penultimate subdivision level.
-static const size_t kMaxSubdivisionDepth = 10;
+static const int kMaxSubdivisionDepth = 10;
 static const double kUEps = 1e-6;
 
 // For `N <= kMaxNNoAlloc`, the intermediate subdivided basis vector in
@@ -56,7 +56,7 @@ void DooSabinWeights(int N, Weights* w) {
 }
 
 // BiquadraticBsplineBasis
-const size_t kNumBiquadraticBsplineBasis = 9;
+const int kNumBiquadraticBsplineBasis = 9;
 const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
                                                                       {1, 0},
                                                                       {0, 0},
@@ -104,7 +104,7 @@ class Patch {
 
   explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
-        size_t depth = 0)
+        int depth = 0)
       : _parent(parent),
         _depth(depth),
         _face_array(face_array) {
@@ -141,26 +141,26 @@ class Patch {
   }
 
  private:
-  size_t GetFaceIndexWithAdjacentVertex(int j) const {
-    for (size_t i = 0; i < _face_array->number_of_faces(); ++i) {
+  int GetFaceIndexWithAdjacentVertex(int j) const {
+    for (int i = 0; i < _face_array->number_of_faces(); ++i) {
       if (_face_array->face(i)[1] == j) {
         return i;
       }
     }
-    return std::numeric_limits<size_t>::max();
+    return std::numeric_limits<int>::max();
   }
 
-  size_t GetFaceIndexOfFace(const std::vector<int>& face) {
+  int GetFaceIndexOfFace(const std::vector<int>& face) {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
-      size_t j = std::distance(face.begin(), it);
+      int j = std::distance(face.begin(), it);
       int half_edge = _face_array->FindHalfEdge(
         _I[0], face[(j + 1) % face.size()]);
       if (half_edge >= 0) {
         return half_edge;
       }
     }
-    return std::numeric_limits<size_t>::max();
+    return std::numeric_limits<int>::max();
   }
 
  private:
@@ -169,7 +169,7 @@ class Patch {
     // Set `_is_valid`.
     assert(_face_array->number_of_faces() == 4);
     _is_valid = true;
-    for (size_t j = 0; j < _face_array->number_of_faces(); ++j) {
+    for (int j = 0; j < _face_array->number_of_faces(); ++j) {
       if (_face_array->number_of_sides(j) != 4) {
         _is_valid = false;
         break;
@@ -184,8 +184,8 @@ class Patch {
 
     // Order the vertices in each face so that `i` is the first vertex.
     // Order the faces to also respect the vertex ordering.
-    const size_t n_faces = _face_array->number_of_faces();
-    size_t faces_remaining = n_faces;
+    const int n_faces = _face_array->number_of_faces();
+    int faces_remaining = n_faces;
 
     _ordered_face_indices.reserve(n_faces);
 
@@ -195,15 +195,15 @@ class Patch {
 
     // Order remaining faces.
     while (--faces_remaining) {
-      size_t last_face_index = _ordered_face_indices.back();
+      int last_face_index = _ordered_face_indices.back();
       int n = _face_array->number_of_sides(last_face_index);
       auto* f = _face_array->face(last_face_index);
       const int last_vertex = f[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
-      size_t next_face_index = std::numeric_limits<size_t>::max();
+      int next_face_index = std::numeric_limits<int>::max();
 
-      for (size_t j = 0; j < n_faces; ++j) {
+      for (int j = 0; j < n_faces; ++j) {
         n = _face_array->number_of_sides(j);
         f = _face_array->face(j);
 
@@ -214,13 +214,13 @@ class Patch {
           }
         }
 
-        if (next_face_index != std::numeric_limits<size_t>::max()) {
+        if (next_face_index != std::numeric_limits<int>::max()) {
           break;
         }
       }
 
       // Ensure the half edge was found.
-      assert(next_face_index != std::numeric_limits<size_t>::max());
+      assert(next_face_index != std::numeric_limits<int>::max());
 
       _face_array->RotateFaceToVertex(next_face_index, i);
       _ordered_face_indices.push_back(next_face_index);
@@ -231,7 +231,7 @@ class Patch {
     // Construct `_I` from the reordered `_face_array`.
     _I.push_back(i);
 
-    for (size_t j = 0; j < _face_array->number_of_faces(); ++j) {
+    for (int j = 0; j < _face_array->number_of_faces(); ++j) {
       int n = _face_array->number_of_sides(j);
       auto* f = _face_array->face(j);
       std::copy(f + 1, f + n - 1, std::back_inserter(_I));
@@ -241,8 +241,8 @@ class Patch {
   // Subdivision
   void Subdivide() {
     // Create `S` to include all of the child vertices.
-    size_t n_child_vertices = 0;
-    for (size_t i = 0; i < 4; ++i) {
+    int n_child_vertices = 0;
+    for (int i = 0; i < 4; ++i) {
       n_child_vertices += _face_array->number_of_sides(i);
     }
 
@@ -251,21 +251,21 @@ class Patch {
 
     // Fill `S` using the Doo-Sabin subdivision weights.
     int child_index = 0;
-    for (size_t i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
       // Get subdivision weights of face `i` with `n` vertices.
       const int n = _face_array->number_of_sides(i);
       Vector w;
       DooSabinWeights(n, &w);
 
       // Get `face_indices_in_I`.
-      std::vector<size_t> face_indices_in_I(n);
+      std::vector<int> face_indices_in_I(n);
       auto f = _face_array->face(i);
 
       for (int j = 0; j < n; ++j) {
         // Find index of vertex `f[j]` in `_I`.
         auto it = std::find(_I.begin(), _I.end(), f[j]);
         assert(it != _I.end());
-        face_indices_in_I[j] = std::distance(_I.begin(), it);
+        face_indices_in_I[j] = static_cast<int>(std::distance(_I.begin(), it));
       }
 
       // Copy `w` into `S` for each child vertex.
@@ -286,7 +286,7 @@ class Patch {
     child_index = 0;
     std::vector<int> raw_child_face_array;
     raw_child_face_array.push_back(4);
-    for (size_t i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
       int n = _face_array->number_of_sides(i);
       raw_child_face_array.push_back(n);
 
@@ -346,7 +346,7 @@ class Patch {
       // NOTE `Subdivide` is only called in `Initialise` for `_depth = 0` so
       // this is all OK.
       child->_S.resize(child->_I.size(), S.cols());
-      for (size_t i = 0; i < child->_I.size(); ++i) {
+      for (int i = 0; i < child->_I.size(); ++i) {
         child->_S.row(i) = S.row(child->_I[i]);
       }
       if (!child->_is_valid && child->_depth < kMaxSubdivisionDepth) {
@@ -390,7 +390,7 @@ class Patch {
   void AdjustUForValidChild(Vector2* u) const {
     assert(_children.size() > 0);
 
-    for (size_t i = 0; i < _children.size(); ++i) {
+    for (int i = 0; i < _children.size(); ++i) {
       if (_children[i]->_is_valid) {
         (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kUEps);
         (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kUEps);
@@ -429,7 +429,7 @@ class Patch {
   template <int Exponent>
   struct MultiplyAndScale {
     template <typename S, typename B, typename TX, typename R>
-    inline void operator()(size_t depth, const S& S, const B& b, const TX& X,
+    inline void operator()(int depth, const S& S, const B& b, const TX& X,
                            R* r) const {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
@@ -448,7 +448,7 @@ class Patch {
   class MultiplyAndRepeat {
    public:
     template <typename S, typename B, typename TX, typename R>
-    inline void operator()(size_t depth, const S& S, const B& b, const TX& X,
+    inline void operator()(int depth, const S& S, const B& b, const TX& X,
                            R* r) const {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
@@ -481,7 +481,7 @@ class Patch {
  private:
   std::unique_ptr<FaceArray> _face_array;
   const Patch<Scalar>* _parent;
-  size_t _depth;
+  int _depth;
 
   bool _is_valid;
   std::vector<int> _ordered_face_indices;
@@ -528,18 +528,18 @@ class Surface {
     // Ensure `N >= 1`.
     N = std::max(N, 1);
 
-    size_t samples_per_patch = N * N;
-    size_t num_samples = _patch_vertex_indices.size() * samples_per_patch;
+    int samples_per_patch = N * N;
+    int num_samples = _patch_vertex_indices.size() * samples_per_patch;
 
     p->resize(num_samples);
     U->resize(2, num_samples);
 
     const Scalar delta = Scalar(1) / N;
 
-    for (size_t i = 0; i < _patch_vertex_indices.size(); ++i) {
-      for (size_t j = 0; j < N; ++j) {
-        for (size_t k = 0; k < N; ++k) {
-          size_t l = i * (N * N) + j * N + k;
+    for (int i = 0; i < _patch_vertex_indices.size(); ++i) {
+      for (int j = 0; j < N; ++j) {
+        for (int k = 0; k < N; ++k) {
+          int l = i * (N * N) + j * N + k;
           (*p)[l] = static_cast<std::decay<decltype((*p)[0])>::type>(i);
           (*U)(0, l) = (Scalar(0.5) + k) * delta;
           (*U)(1, l) = (Scalar(0.5) + j) * delta;
@@ -558,7 +558,7 @@ class Surface {
     T_.push_back(0);
 
     // Add quadrilaterals within each patch.
-    for (size_t i = 0; i < _patch_vertex_indices.size(); ++i) {
+    for (int i = 0; i < _patch_vertex_indices.size(); ++i) {
       for (int j = 0; j < (N - 1); ++j) {
         for (int k = 0; k < (N - 1); ++k) {
           int l = static_cast<int>(i) * (N * N) + j * N + k;
@@ -582,7 +582,7 @@ class Surface {
     }
 
     // Add quadrilaterals between patches.
-    for (size_t i_index = 0; i_index < _patch_vertex_indices.size();
+    for (int i_index = 0; i_index < _patch_vertex_indices.size();
          ++i_index) {
       int i = _patch_vertex_indices[i_index];
       int i_offset = static_cast<int>(i_index) * (N * N);
@@ -623,7 +623,7 @@ class Surface {
     // Add faces at corners of patches.
     std::vector<int> current_face, next_face;
 
-    for (size_t face_index = 0; face_index < _control_mesh.number_of_faces();
+    for (int face_index = 0; face_index < _control_mesh.number_of_faces();
          ++face_index) {
       auto f = _control_mesh.face(face_index);
       current_face.clear();
@@ -717,13 +717,13 @@ class Surface {
       // Get the permuted face indices.
       std::vector<int> permuted_face_indices;
       permuted_face_indices.reserve(face_indices.size());
-      for (size_t j : patch->ordered_face_indices()) {
+      for (int j : patch->ordered_face_indices()) {
         permuted_face_indices.push_back(face_indices[j]);
       }
       assert(permuted_face_indices.size() == 4);
 
       // A "half edge" is an ordered pair, where each entry is a face index.
-      for (size_t j = 0; j < 4; ++j) {
+      for (int j = 0; j < 4; ++j) {
         auto half_edge = std::make_pair(permuted_face_indices[j],
                                         permuted_face_indices[(j + 1) % 4]);
         vertex_to_half_edges[i].push_back(half_edge);
