@@ -400,5 +400,23 @@ int main() {
     }
   }
 
+  // Example usage of `MatrixOfColumnPointers`.
+  const double* kX3PointersData[] = {&kX3Data[0],
+                                     &kX3Data[3],
+                                     &kX3Data[6],
+                                     &kX3Data[9],
+                                     &kX3Data[12],
+                                     &kX3Data[15],
+                                     &kX3Data[18],
+                                     &kX3Data[21]};
+  doosabin::MatrixOfColumnPointers<double> kX3Pointers(kX3PointersData, 3, 8);
+  Eigen::Vector3d r;
+  patches[0].M(kU.col(0), kX3Pointers, &r);
+  if (!r.isApprox(kMs[0]->col(0), 1e-5)) {
+    std::cerr << "M [0, 0]: " << r.transpose() << " != "
+              << kMs[0]->col(0).transpose() << std::endl;
+    return 1;
+  }
+
   return 0;
 }
