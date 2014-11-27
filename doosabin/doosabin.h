@@ -657,7 +657,6 @@ class Surface {
     }
   }
 
-  // FIXME This should be `const` but `_control_mesh` needs mutation.
   int number_of_vertices() {
     return _control_mesh.number_of_vertices();
   }
