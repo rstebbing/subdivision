@@ -759,6 +759,188 @@ class Surface {
   std::vector<std::unique_ptr<Patch>> _patches;
 };
 
+// SurfaceWalker
+template <typename Scalar>
+class SurfaceWalker {
+  typedef Surface<Scalar> Surface;
+  typedef typename Surface::Matrix Matrix;
+  typedef typename Surface::Vector Vector;
+  typedef typename Surface::Vector2 Vector2;
+
+ public:
+  SurfaceWalker(const Surface* surface)
+    : surface_(surface) {}
+
+  template <typename TX, typename U, typename Delta, typename U1>
+  bool ApplyUpdate(const TX& X, const int p, const U& u, const Delta& delta,
+                   int* p1, U1* u1) {
+    int p1_depth = -1;
+    // TODO Replace with better strategy which doesn't allocate dynamically.
+    std::vector<unsigned char> patch_index_explored(
+      surface_->number_of_patches());
+    return ApplyUpdateInternal(X, p, u, delta, p1, u1,
+                               0, &p1_depth, &patch_index_explored);
+  }
+
+ private:
+  template <typename TX, typename U, typename Delta, typename U1>
+  bool ApplyUpdateInternal(
+      const TX& X, const int p, const U& u, const Delta& delta,
+      int* p1, U1* u1,
+      int depth,
+      int* p1_depth,
+      std::vector<unsigned char>* patch_index_explored) const {
+    assert(X.rows() == 3);
+
+    Scalar t[4];
+    int num_intersections = WhichEdgesBroke(u, delta, t);
+    if (num_intersections == 0) {
+      *p1 = p;
+      (*u1)[0] = u[0] + delta[0];
+      (*u1)[1] = u[1] + delta[1];
+      return true;
+    }
+    Vector2 _u, _delta;
+    _u << u[0], u[1];
+    _delta << delta[0], delta[1];
+
+    (*patch_index_explored)[p] = 1;
+
+    assert(num_intersections <= 2);
+
+    int p_edge_index = 0;
+    for (int n = 0; n < num_intersections; ++n, ++p_edge_index) {
+      while (t[p_edge_index] < 0) {
+        ++p_edge_index;
+      }
+
+      Vector2 u_1;
+      u_1 = _u + t[p_edge_index] * _delta;
+
+      int p1_edge_index, p_1;
+      bool has_adjacent_patch = GotoAdjacentPatch(p, p_edge_index,
+                                                  &p_1, &p1_edge_index);
+      has_adjacent_patch &= 0 == (*patch_index_explored)[p_1];
+
+      if (!has_adjacent_patch) {
+        if (depth > *p1_depth) {
+          *p1_depth = depth;
+          *p1 = p;
+          (*u1)[0] = u_1[0];
+          (*u1)[1] = u_1[1];
+        }
+        continue;
+      }
+
+      Eigen::Matrix<Scalar, 4, 1> y0, y1;
+      y0 << 1 - u_1[0], u_1[1], u_1[0], 1 - u_1[1];
+      y1[0] = y0[(p_edge_index + 3) % 4];
+      y1[1] = y0[(p_edge_index + 0) % 4];
+      y1[2] = y0[(p_edge_index + 1) % 4];
+      y1[3] = y0[(p_edge_index + 2) % 4];
+
+      Vector2 u_p1;
+      u_p1 << y1[(p1_edge_index + 3) % 4], y1[p1_edge_index];
+
+      Eigen::Matrix<Scalar, 3, 2> M0, M1;
+      FillPatchTransformationMatrix(X, p, u_1, &M0);
+      FillPatchTransformationMatrix(X, p_1, u_p1, &M1);
+      Eigen::Matrix<Scalar, 2, 2> A0 = M1.transpose() * M1,
+                                  A0_I = A0.inverse();
+      Eigen::Matrix<Scalar, 2, 3> M1_I = A0_I * M1.transpose();
+      Eigen::Matrix<Scalar, 2, 2> M = M1_I * M0;
+      Vector2 delta_1 = M * _delta;
+      delta_1 *= std::max(Scalar(0), 1 - t[p_edge_index]);
+
+      if (ApplyUpdateInternal(X, p_1, u_p1, delta_1, p1, u1,
+                              depth + 1, p1_depth, patch_index_explored)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  template <typename U, typename Delta>
+  int WhichEdgesBroke(const U& u,
+                      const Delta& delta,
+                      Scalar* t) const {
+    // Note that the transformation to `x` and `delta_x` isn't strictly
+    // required; it just made for easier reasoning in initial testing.
+    static const Scalar X0_data[8] = {0, 0,
+                                      1, 0,
+                                      1, 1,
+                                      0, 1};
+    static const Eigen::Map<const Eigen::Matrix<Scalar, 2, 4>> X0(X0_data);
+
+    Eigen::Vector2d x = u[0] * X0.col(1) + u[1] * X0.col(3);
+    Eigen::Vector2d delta_x = delta[0] * X0.col(1) + delta[1] * X0.col(3);
+
+    Eigen::Matrix2d A;
+    A.col(0) = delta_x;
+
+    int num_intersections = 0;
+
+    // Fill `t` in reverse order so that `t` corresponds to patch edge
+    // ordering and not patch domain edge ordering.
+    for (int i = 0; i < 4; ++i) {
+      Eigen::Vector2d m = X0.col((i + 1) % 4) - X0.col(i);
+      A.col(1) = -m;
+
+      Eigen::Matrix2d A_I = A.inverse();
+      Eigen::Vector2d v = A_I * (X0.col(i) - x);
+      if (-kUEps <= v[0] && v[0] <= 1.0 + kUEps &&
+          -kUEps <= v[1] && v[1] <= 1.0 + kUEps &&
+          ((delta_x[0] * m[1] - m[0] * delta_x[1]) >= 0.0)) {
+        // `t` is clamped to [0, 1] so that the delta can never be increased
+        // in the calling function.
+        t[3 - i] = std::max(0.0, std::min(1.0, v[0]));
+        ++num_intersections;
+      }
+      else {
+        t[3 - i] = Scalar(-1);
+      }
+    }
+
+    return num_intersections;
+  }
+
+  bool GotoAdjacentPatch(int p, int p_edge_index,
+                         int* p1, int* p1_edge_index) const {
+    *p1 = surface_->adjacent_patch_indices(p)[p_edge_index];
+    if (*p1 < 0)
+      return false;
+
+    auto & adjacent_patches_in_p1 = surface_->adjacent_patch_indices(*p1);
+    auto i = std::find(adjacent_patches_in_p1.begin(),
+                       adjacent_patches_in_p1.end(),
+                       p);
+    *p1_edge_index = static_cast<int>(std::distance(
+      adjacent_patches_in_p1.begin(), i));
+    return true;
+  }
+
+  template <typename TX, typename U>
+  void FillPatchTransformationMatrix(const TX& X, int p, const U& u,
+                                     Eigen::Matrix<Scalar, 3, 2>* M) const {
+    auto& patch_vertex_indices = surface_->patch_vertex_indices(p);
+
+    // TODO Replace with better strategy which doesn't allocate dynamically.
+    size_t n = patch_vertex_indices.size();
+    Matrix Xp(X.rows(), patch_vertex_indices.size());
+    for (size_t i = 0; i < n; ++i) {
+      Xp.col(i) = X.col(patch_vertex_indices[i]);
+    }
+
+    Eigen::Map<Vector2> mu(M->data() + 0), mv(M->data() + 3);
+    surface_->Mu(p, u, Xp, &mu);
+    surface_->Mv(p, u, Xp, &mv);
+  }
+
+private:
+  const Surface* surface_;
+};
+
 } // namespace doosabin
 
 #endif // DOOSABIN_H
