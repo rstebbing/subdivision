@@ -341,6 +341,22 @@ int main() {
             std::back_inserter(mesh_cell_array));
   doosabin::GeneralMesh mesh(std::move(mesh_cell_array));
 
+  static const double kXSurface[] = {0, 2, 0,
+                                     1, 2, 0,
+                                     2, 2, 0,
+                                     3, 2, 0,
+                                     0, 1, 0,
+                                     1, 1, 0,
+                                     2, 1, 0,
+                                     3, 1, 0,
+                                     4, 1, 0,
+                                     0, 0, 0,
+                                     1, 0, 0,
+                                     2, 0, 0,
+                                     3, 0, 0,
+                                     4, 0, 0};
+  static const Eigen::Map<const Eigen::MatrixXd> kX(kXSurface, 3, 14);
+
   std::cout << "mesh.iterate_half_edges(): " << std::endl;
   for (auto& i : mesh.iterate_half_edges()) {
     std::cout << " (" << i.first << ", " << i.second << ")" << std::endl;
@@ -355,6 +371,14 @@ int main() {
   Surface surface(mesh);
 
   std::cout << "surface.number_of_vertices(): " << surface.number_of_vertices() << std::endl;
+
+  doosabin::SurfaceWalker<double> walker(&surface);
+
+  const double u0[2] = {0.5, 0.5};
+  const double delta[2] = {0.3, 0.3};
+  int p1;
+  double u1[2];
+  walker.ApplyUpdate(kX, 0, u0, delta, &p1, &u1);
 
   return 0;
 }
