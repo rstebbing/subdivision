@@ -121,7 +121,7 @@ class Patch {
 
   #define EVALUATE(M, F, G, S) \
   template <typename U, typename TX, typename R> \
-  void M(const U& u, const TX& X, R* r) const { \
+  inline void M(const U& u, const TX& X, R* r) const { \
     Evaluate<uniform_quadratic_bspline:: F, \
              uniform_quadratic_bspline:: G, S>(u, X, r); \
   }
@@ -149,7 +149,7 @@ class Patch {
         return i;
       }
     }
-    return std::numeric_limits<int>::max();
+    return -1;
   }
 
   int GetFaceIndexOfFace(const std::vector<int>& face) {
@@ -162,7 +162,7 @@ class Patch {
         return half_edge;
       }
     }
-    return std::numeric_limits<int>::max();
+    return -1;
   }
 
  private:
@@ -203,7 +203,7 @@ class Patch {
       const int last_vertex = f[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
-      int next_face_index = std::numeric_limits<int>::max();
+      int next_face_index = -1;
 
       for (int j = 0; j < n_faces; ++j) {
         n = _face_array->number_of_sides(j);
@@ -216,13 +216,13 @@ class Patch {
           }
         }
 
-        if (next_face_index != std::numeric_limits<int>::max()) {
+        if (next_face_index >= 0) {
           break;
         }
       }
 
       // Ensure the half edge was found.
-      assert(next_face_index != std::numeric_limits<int>::max());
+      assert(next_face_index >= 0);
 
       _face_array->RotateFaceToVertex(next_face_index, i);
       _ordered_face_indices.push_back(next_face_index);
@@ -362,7 +362,7 @@ class Patch {
   // Evaluation
   template <typename F, typename G, typename E, typename U, typename TX,
             typename R>
-  void Evaluate(const U& u, const TX& X, R* r) const {
+  inline void Evaluate(const U& u, const TX& X, R* r) const {
     Vector2 _u(u);
     assert(r != nullptr);
     EvaluateInternal<F, G, E>(&_u, X, r);
@@ -449,7 +449,7 @@ class Patch {
         MatrixVectorMultiply(X, St_b, r);
       }
       if (Exponent > 1) {
-        *r *= pow(Scalar(Exponent), static_cast<int>(depth));
+        *r *= pow(Scalar(Exponent), depth);
       }
     }
 
@@ -532,7 +532,7 @@ class Surface {
 
   #define EVALUATE(M) \
   template <typename U, typename TX, typename R> \
-  void M(int p, const U& u, const TX& X, R* r) const { \
+  inline void M(int p, const U& u, const TX& X, R* r) const { \
     _patches[p]->M(u, X, r); \
   }
   EVALUATE(M);
@@ -547,6 +547,8 @@ class Surface {
   template <typename P, typename TU>
   void UniformParameterisation(int N, P* p, TU* U,
                                std::vector<int>* T = nullptr) {
+    typedef std::decay<decltype((*p)[0])>::type PatchIndex;
+
     // Ensure `N >= 1`.
     N = std::max(N, 1);
 
@@ -562,7 +564,7 @@ class Surface {
       for (int j = 0; j < N; ++j) {
         for (int k = 0; k < N; ++k) {
           int l = i * (N * N) + j * N + k;
-          (*p)[l] = static_cast<std::decay<decltype((*p)[0])>::type>(i);
+          (*p)[l] = static_cast<PatchIndex>(i);
           (*U)(0, l) = (Scalar(0.5) + k) * delta;
           (*U)(1, l) = (Scalar(0.5) + j) * delta;
         }
@@ -583,7 +585,7 @@ class Surface {
     for (int i = 0; i < _patch_vertex_indices.size(); ++i) {
       for (int j = 0; j < (N - 1); ++j) {
         for (int k = 0; k < (N - 1); ++k) {
-          int l = static_cast<int>(i) * (N * N) + j * N + k;
+          int l = i * (N * N) + j * N + k;
           T_.push_back(4);
           T_.push_back(l);
           T_.push_back(l + 1);
@@ -607,7 +609,7 @@ class Surface {
     for (int i_index = 0; i_index < _patch_vertex_indices.size();
          ++i_index) {
       int i = _patch_vertex_indices[i_index];
-      int i_offset = static_cast<int>(i_index) * (N * N);
+      int i_offset = i_index * (N * N);
 
       for (int half_edge_index : _control_mesh.half_edges_from_vertex(i)) {
         // Find adjacent patch at vertex `j` (with patch offset `j_offset`).
@@ -933,8 +935,9 @@ class SurfaceWalker {
   bool GotoAdjacentPatch(int p, int p_edge_index,
                          int* p1, int* p1_edge_index) const {
     *p1 = surface_->adjacent_patch_indices(p)[p_edge_index];
-    if (*p1 < 0)
+    if (*p1 < 0) {
       return false;
+    }
 
     auto & adjacent_patches_in_p1 = surface_->adjacent_patch_indices(*p1);
     auto i = std::find(adjacent_patches_in_p1.begin(),
