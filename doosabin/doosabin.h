@@ -735,7 +735,9 @@ class Surface {
 
     // Set `_adjacent_patch_indices`.
     _control_mesh.EnsureVertices();
-    _adjacent_patch_indices.resize(_control_mesh.number_of_vertices());
+
+    int p = 0;
+    _adjacent_patch_indices.resize(_patches.size());
     for (int i : _patch_vertex_indices) {
       for (auto& half_edge : vertex_to_half_edges[i]) {
         auto opposite_half_edge = std::make_pair(half_edge.second,
@@ -745,8 +747,9 @@ class Surface {
         if (it != half_edge_to_vertex.end()) {
           adj_patch_index = _vertex_to_patch_index[it->second];
         }
-        _adjacent_patch_indices[i].push_back(adj_patch_index);
+        _adjacent_patch_indices[p].push_back(adj_patch_index);
       }
+      ++p;
     }
   }
 
