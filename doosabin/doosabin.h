@@ -14,6 +14,7 @@
 #include "Eigen/Dense"
 
 #include "Mesh/general_mesh.h"
+#include "Math/linalg.h"
 #include "Math/modulo.h"
 
 #include "uniform_quadratic_bspline.h"
@@ -36,6 +37,7 @@ static const int kMaxNNoAlloc = 16;
 // Types.
 using mesh::FaceArray;
 using mesh::GeneralMesh;
+using linalg::MatrixOfColumnPointers;
 using math::modulo;
 
 // DooSabinWeights
@@ -427,7 +429,11 @@ class Patch {
   }
 
   template <int Exponent>
-  struct MultiplyAndScale {
+  class MultiplyAndScale {
+   public:
+    // Define `MatrixVectorMultiply` to facilitate non-Eigen type
+    // `MatrixOfColumnPointers` for `TX`.
+    // TODO Add `MatrixOfColumnPointers` as an Eigen extension.
     template <typename S, typename B, typename TX, typename R>
     inline void operator()(int depth, const S& S, const B& b, const TX& X,
                            R* r) const {
@@ -435,13 +441,29 @@ class Patch {
         Scalar St_b_data[kMaxNNoAlloc];
         Eigen::Map<Vector> St_b(St_b_data, S.cols());
         St_b.noalias() = S.transpose() * b;
-        r->noalias() = X * St_b;
+        MatrixVectorMultiply(X, St_b, r);
       } else {
-        r->noalias() = X * (S.transpose() * b);
+        // Make evaluation of the matrix product explicit for
+        // `MatrixOfColumnPointers`. None of this is particularly great ...
+        Vector St_b = S.transpose() * b;
+        MatrixVectorMultiply(X, St_b, r);
       }
       if (Exponent > 1) {
         *r *= pow(Scalar(Exponent), static_cast<int>(depth));
       }
+    }
+
+   private:
+    template <typename TX, typename Y, typename R>
+    inline void MatrixVectorMultiply(const TX& X, const Y& y, R* r) const {
+      r->noalias() = X * y;
+    }
+
+    template <typename Y, typename R>
+    inline void MatrixVectorMultiply(const MatrixOfColumnPointers<Scalar>& X,
+                                     const Y& y,
+                                     R* r) const {
+      X.MultiplyVector(y, r);
     }
   };
 
