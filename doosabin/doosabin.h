@@ -665,8 +665,6 @@ class Surface {
     return _control_mesh.number_of_faces();
   }
 
-  // const std::vector<int>& face_vertex_indices(const int f) const;
-
   int number_of_patches() const {
     return static_cast<int>(_patch_vertex_indices.size());
   }
