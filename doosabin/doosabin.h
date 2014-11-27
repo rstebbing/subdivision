@@ -823,7 +823,9 @@ class SurfaceWalker {
       int p1_edge_index, p_1;
       bool has_adjacent_patch = GotoAdjacentPatch(p, p_edge_index,
                                                   &p_1, &p1_edge_index);
-      has_adjacent_patch &= 0 == (*patch_index_explored)[p_1];
+      if (has_adjacent_patch) {
+        has_adjacent_patch &= 0 == (*patch_index_explored)[p_1];
+      }
 
       if (!has_adjacent_patch) {
         if (depth > *p1_depth) {
@@ -935,7 +937,8 @@ class SurfaceWalker {
       Xp.col(i) = X.col(patch_vertex_indices[i]);
     }
 
-    Eigen::Map<Vector2> mu(M->data() + 0), mv(M->data() + 3);
+    Eigen::Map<Eigen::Matrix<Scalar, 3, 1>> mu(M->data() + 0),
+                                            mv(M->data() + 3);
     surface_->Mu(p, u, Xp, &mu);
     surface_->Mv(p, u, Xp, &mv);
   }
