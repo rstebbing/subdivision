@@ -13,7 +13,7 @@ s = StringIO()
 def savetxt(type_, fmt, name, X):
     X = np.atleast_2d(X)
 
-    s.write('const %s %s[] = {\n' % (type_, name))
+    s.write('static const %s %s[] = {\n' % (type_, name))
     for i, xi in enumerate(X):
         s.write('  ')
         for j, xij in enumerate(xi):
@@ -27,7 +27,7 @@ def savetxt(type_, fmt, name, X):
 
 def savetxt_MapConstMatrixXd(name, X):
     savetxt('double', '%+.6e', '{0}Data'.format(name), X)
-    s.write('const MapConstMatrixXd {0}({0}Data, {1}, {2});\n'.format(
+    s.write('static const MapConstMatrixXd {0}({0}Data, {1}, {2});\n'.format(
         name, X.shape[1], X.shape[0]))
 
 t, step = np.linspace(0.0, 1.0, 3, endpoint=False, retstep=True)
@@ -48,7 +48,7 @@ for N in [3, 4, 5, 6]:
         T_.extend(t)
     T_ = np.array(T_, dtype=np.int32)
     savetxt('int', '%d', 'kT%dData' % N, T_)
-    s.write(('const std::vector<int> kT{0} = '
+    s.write(('static const std::vector<int> kT{0} = '
              'InitialiseVector(kT{0}Data, {1});\n\n').format(N, len(T_)))
 
     savetxt_MapConstMatrixXd('kX%d' % N, X)
