@@ -6,7 +6,7 @@ from functools import partial
 import numpy as np
 np.random.seed(1337)
 
-import doosabin
+from verification import doosabin
 from verification.common import example_extraordinary_patch
 
 s = StringIO()
@@ -48,8 +48,8 @@ for N in [3, 4, 5, 6]:
         T_.extend(t)
     T_ = np.array(T_, dtype=np.int32)
     savetxt('int', '%d', 'kT%dData' % N, T_)
-    s.write(('const doosabin::FaceArray kT{0} = '
-             'InitialiseFaceArray(kT{0}Data, {1});\n\n').format(N, len(T_)))
+    s.write(('const std::vector<int> kT{0} = '
+             'InitialiseVector(kT{0}Data, {1});\n\n').format(N, len(T_)))
 
     savetxt_MapConstMatrixXd('kX%d' % N, X)
     s.write('\n')
