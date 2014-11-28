@@ -555,15 +555,16 @@ class Surface {
     // Ensure `N >= 1`.
     N = std::max(N, 1);
 
-    int samples_per_patch = N * N;
-    int num_samples = _patch_vertex_indices.size() * samples_per_patch;
+    const int num_patches = static_cast<int>(_patch_vertex_indices.size());
+    const int samples_per_patch = N * N;
+    const int num_samples = num_patches * samples_per_patch;
 
     p->resize(num_samples);
     U->resize(2, num_samples);
 
     const Scalar delta = Scalar(1) / N;
 
-    for (int i = 0; i < _patch_vertex_indices.size(); ++i) {
+    for (int i = 0; i < num_patches; ++i) {
       for (int j = 0; j < N; ++j) {
         for (int k = 0; k < N; ++k) {
           int l = i * (N * N) + j * N + k;
@@ -585,7 +586,7 @@ class Surface {
     T_.push_back(0);
 
     // Add quadrilaterals within each patch.
-    for (int i = 0; i < _patch_vertex_indices.size(); ++i) {
+    for (int i = 0; i < num_patches; ++i) {
       for (int j = 0; j < (N - 1); ++j) {
         for (int k = 0; k < (N - 1); ++k) {
           int l = i * (N * N) + j * N + k;
@@ -603,14 +604,13 @@ class Surface {
     std::vector<std::vector<int>> border_offsets(4);
     for (int i = 0; i < N; ++i) {
       border_offsets[0].push_back(i);
-      border_offsets[1].push_back((N - 1) + i * N);
+      border_offsets[1].push_back(N * (N - 1 - i));
       border_offsets[2].push_back(N * N - 1 - i);
-      border_offsets[3].push_back(N * (N - 1 - i));
+      border_offsets[3].push_back((N - 1) + i * N);
     }
 
     // Add quadrilaterals between patches.
-    for (int i_index = 0; i_index < _patch_vertex_indices.size();
-         ++i_index) {
+    for (int i_index = 0; i_index < num_patches; ++i_index) {
       int i = _patch_vertex_indices[i_index];
       int i_offset = i_index * (N * N);
 
