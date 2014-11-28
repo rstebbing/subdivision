@@ -49,7 +49,7 @@ cdef class Surface:
         del self._surface
 
     @staticmethod
-    def evaluate(f):
+    def __evaluate(f):
         def wrapped_f(self, p, U, X):
             p = np.require(np.atleast_1d(p), np.int32)
             check_ndarray_or_raise('p', p, np.int32, 1, None)
@@ -68,27 +68,27 @@ cdef class Surface:
             return f(self, p, U, X)
         return wrapped_f
 
-    @evaluate
+    @__evaluate
     def M(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.M(p, U, X)
 
-    @evaluate
+    @__evaluate
     def Mu(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.Mu(p, U, X)
 
-    @evaluate
+    @__evaluate
     def Mv(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.Mv(p, U, X)
 
-    @evaluate
+    @__evaluate
     def Muu(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.Muu(p, U, X)
 
-    @evaluate
+    @__evaluate
     def Muv(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.Muv(p, U, X)
 
-    @evaluate
+    @__evaluate
     def Mvv(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.Mvv(p, U, X)
 
