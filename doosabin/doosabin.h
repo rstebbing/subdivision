@@ -155,11 +155,11 @@ class Patch {
   int GetFaceIndexOfFace(const std::vector<int>& face) {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
-      int j = std::distance(face.begin(), it);
-      int half_edge = _face_array->FindHalfEdge(
+      size_t j = std::distance(face.begin(), it);
+      int face_index = _face_array->HalfEdgeToFaceIndex(
         _I[0], face[(j + 1) % face.size()]);
-      if (half_edge >= 0) {
-        return half_edge;
+      if (face_index >= 0) {
+        return face_index;
       }
     }
     return -1;
@@ -238,6 +238,9 @@ class Patch {
       auto* f = _face_array->face(j);
       std::copy(f + 1, f + n - 1, std::back_inserter(_I));
     }
+
+    // Required by `GetFaceIndexOfFace`.
+    _face_array->EnsureHalfEdgeToFaceIndex();
   }
 
   // Subdivision
