@@ -34,7 +34,7 @@ class Surface {
  public: \
   inline PyArrayObject* M(PyArrayObject* npy_p, \
                           PyArrayObject* npy_U, \
-                          PyArrayObject* npy_X) { \
+                          PyArrayObject* npy_X) const { \
     return EvaluateImpl<_##M>(npy_p, npy_U, npy_X); \
   }
   EVALUATE(M);
@@ -45,7 +45,7 @@ class Surface {
   EVALUATE(Mvv);
 #undef EVALUATE
 
-  PyObject* UniformParameterisation(int N) {
+  PyObject* UniformParameterisation(int N) const {
     Eigen::VectorXi p;
     Eigen::MatrixXd U;
     std::vector<int> T;

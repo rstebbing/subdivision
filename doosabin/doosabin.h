@@ -152,7 +152,7 @@ class Patch {
     return -1;
   }
 
-  int GetFaceIndexOfFace(const std::vector<int>& face) {
+  int GetFaceIndexOfFace(const std::vector<int>& face) const {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
       size_t j = std::distance(face.begin(), it);
@@ -549,7 +549,7 @@ class Surface {
 
   template <typename P, typename TU>
   void UniformParameterisation(int N, P* p, TU* U,
-                               std::vector<int>* T = nullptr) {
+                               std::vector<int>* T = nullptr) const {
     typedef std::decay<decltype((*p)[0])>::type PatchIndex;
 
     // Ensure `N >= 1`.
@@ -684,23 +684,23 @@ class Surface {
     }
   }
 
-  int number_of_vertices() const {
+  inline int number_of_vertices() const {
     return _control_mesh.number_of_vertices();
   }
 
-  int number_of_faces() const {
+  inline int number_of_faces() const {
     return _control_mesh.number_of_faces();
   }
 
-  int number_of_patches() const {
+  inline int number_of_patches() const {
     return static_cast<int>(_patch_vertex_indices.size());
   }
 
-  const std::vector<int>& patch_vertex_indices(int p) const {
+  inline const std::vector<int>& patch_vertex_indices(int p) const {
     return _patches[p]->vertex_indices();
   }
 
-  const std::vector<int>& adjacent_patch_indices(int p) const {
+  inline const std::vector<int>& adjacent_patch_indices(int p) const {
     return _adjacent_patch_indices[p];
   }
 
