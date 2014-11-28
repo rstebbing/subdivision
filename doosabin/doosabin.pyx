@@ -48,6 +48,10 @@ cdef class Surface:
         return self._surface.number_of_vertices()
 
     @property
+    def number_of_faces(self):
+        return self._surface.number_of_faces()
+
+    @property
     def number_of_patches(self):
         return self._surface.number_of_patches()
 
