@@ -11,59 +11,39 @@
 class Surface {
  public:
   typedef doosabin::Surface<double> DooSabinSurface;
+  typedef linalg::MatrixOfColumnPointers<double> MatrixOfColumnPointers;
 
   explicit Surface(PyArrayObject* npy_raw_face_array)
     : surface_(mesh::GeneralMesh(
           mesh_python::PyArrayObject_to_CellArray(npy_raw_face_array)))
   {}
 
-  PyArrayObject* M(PyArrayObject* npy_p,
-                   PyArrayObject* npy_U,
-                   PyArrayObject* npy_X) {
-    auto p = linalg_python::PyArrayObject_to_VectorMap<int>(npy_p);
-    auto U = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_U);
-    auto X = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_X);
-
-    // Sort `p` so that all evaluations over each patch are done together.
-    std::vector<int> argsort_p(p->size());
-    for (size_t i = 0; i < argsort_p.size(); ++i) {
-      argsort_p[i] = static_cast<int>(i);
-    }
-    auto& _p = *p;
-    std::sort(argsort_p.begin(), argsort_p.end(), [&_p](int i, int j) {
-      return _p[i] < _p[j];
-    });
-
-    // Allocate output array `R`.
-    npy_intp dims[2] = {argsort_p.size(), 3};
-    PyArrayObject* npy_R = (PyArrayObject*)PyArray_EMPTY(
-      2, dims, NPY_FLOAT64, 0);
-
-    // `Xp_data` holds the pointers for the instance of
-    // `MatrixOfColumnPointers`.
-    typedef linalg::MatrixOfColumnPointers<double> MatrixOfColumnPointers;
-    std::vector<const double*> Xp_data;
-    Xp_data.reserve(doosabin::kMaxNNoAlloc);
-
-    int p0 = -1;
-    for (size_t i = 0; i < argsort_p.size(); ++i) {
-      int j = argsort_p[i];
-      int pj = _p[j];
-      if (pj != p0) {
-        Xp_data.clear();
-        for (int l : surface_.patch_vertex_indices(pj)) {
-          Xp_data.push_back(X->data() + 3 * l);
-        }
-        p0 = pj;
-      }
-
-      Eigen::Map<Eigen::Vector3d> _r((double*)PyArray_DATA(npy_R) + 3 * j);
-      MatrixOfColumnPointers Xp(Xp_data.data(), 3, Xp_data.size());
-      surface_.M(pj, U->data() + 2 * j, Xp, &_r);
-    }
-
-    return npy_R;
+#define EVALUATE(M) \
+ private: \
+  class _##M { \
+   public: \
+    _##M(const DooSabinSurface* surface) : surface_(surface) {} \
+    inline void operator()(int p, const double* u, \
+                           const MatrixOfColumnPointers& X, \
+                           Eigen::Map<Eigen::Vector3d>* r) const { \
+      surface_->M(p, u, X, r); \
+    } \
+   private: \
+    const DooSabinSurface* surface_; \
+  }; \
+ public: \
+  inline PyArrayObject* M(PyArrayObject* npy_p, \
+                          PyArrayObject* npy_U, \
+                          PyArrayObject* npy_X) { \
+    return EvaluateImpl<_##M>(npy_p, npy_U, npy_X); \
   }
+  EVALUATE(M);
+  EVALUATE(Mu);
+  EVALUATE(Mv);
+  EVALUATE(Muu);
+  EVALUATE(Muv);
+  EVALUATE(Mvv);
+#undef EVALUATE
 
   inline int number_of_vertices() const {
     return surface_.number_of_vertices();
@@ -114,6 +94,58 @@ class Surface {
     PyTuple_SET_ITEM(r, 2, (PyObject*)npy_T);
     return r;
   }
+
+ private:
+  template <typename Evaluator>
+  PyArrayObject* EvaluateImpl(PyArrayObject* npy_p,
+                              PyArrayObject* npy_U,
+                              PyArrayObject* npy_X) const {
+    auto p = linalg_python::PyArrayObject_to_VectorMap<int>(npy_p);
+    auto U = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_U);
+    auto X = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_X);
+
+    // Sort `p` so that all evaluations over each patch are done together.
+    std::vector<int> argsort_p(p->size());
+    for (size_t i = 0; i < argsort_p.size(); ++i) {
+      argsort_p[i] = static_cast<int>(i);
+    }
+    auto& _p = *p;
+    std::sort(argsort_p.begin(), argsort_p.end(), [&_p](int i, int j) {
+      return _p[i] < _p[j];
+    });
+
+    // Allocate output array `R`.
+    npy_intp dims[2] = {argsort_p.size(), 3};
+    PyArrayObject* npy_R = (PyArrayObject*)PyArray_EMPTY(
+      2, dims, NPY_FLOAT64, 0);
+
+    // `Xp_data` holds the pointers for the instance of
+    // `MatrixOfColumnPointers`.
+    std::vector<const double*> Xp_data;
+    Xp_data.reserve(doosabin::kMaxNNoAlloc);
+
+    const Evaluator e(&surface_);
+
+    int p0 = -1;
+    for (size_t i = 0; i < argsort_p.size(); ++i) {
+      int j = argsort_p[i];
+      int pj = _p[j];
+      if (pj != p0) {
+        Xp_data.clear();
+        for (int l : surface_.patch_vertex_indices(pj)) {
+          Xp_data.push_back(X->data() + 3 * l);
+        }
+        p0 = pj;
+      }
+
+      Eigen::Map<Eigen::Vector3d> _r((double*)PyArray_DATA(npy_R) + 3 * j);
+      MatrixOfColumnPointers Xp(Xp_data.data(), 3, Xp_data.size());
+      e(pj, U->data() + 2 * j, Xp, &_r);
+    }
+
+    return npy_R;
+  }
+
 
  private:
   DooSabinSurface surface_;

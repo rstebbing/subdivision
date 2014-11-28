@@ -25,6 +25,11 @@ cdef extern from 'doosabin_pyx.h':
         Surface_cpp(np.ndarray)
 
         np.ndarray M(np.ndarray, np.ndarray, np.ndarray)
+        np.ndarray Mu(np.ndarray, np.ndarray, np.ndarray)
+        np.ndarray Mv(np.ndarray, np.ndarray, np.ndarray)
+        np.ndarray Muu(np.ndarray, np.ndarray, np.ndarray)
+        np.ndarray Muv(np.ndarray, np.ndarray, np.ndarray)
+        np.ndarray Mvv(np.ndarray, np.ndarray, np.ndarray)
 
         int number_of_vertices()
         int number_of_faces()
@@ -78,6 +83,26 @@ cdef class Surface:
     @evaluate
     def M(self, np.ndarray p, np.ndarray U, np.ndarray X):
         return self._surface.M(p, U, X)
+
+    @evaluate
+    def Mu(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.Mu(p, U, X)
+
+    @evaluate
+    def Mv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.Mv(p, U, X)
+
+    @evaluate
+    def Muu(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.Muu(p, U, X)
+
+    @evaluate
+    def Muv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.Muv(p, U, X)
+
+    @evaluate
+    def Mvv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.Mvv(p, U, X)
 
     def uniform_parameterisation(self, np.int32_t N):
         p, U, T = self._surface.UniformParameterisation(N)
