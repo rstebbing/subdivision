@@ -24,12 +24,7 @@ cdef extern from 'doosabin_pyx.h':
     cdef cppclass Surface_cpp 'Surface':
         Surface_cpp(np.ndarray)
 
-        void M(int, double*, double*, double*)
-        void Mu(int, double*, double*, double*)
-        void Mv(int, double*, double*, double*)
-        void Muu(int, double*, double*, double*)
-        void Muv(int, double*, double*, double*)
-        void Mvv(int, double*, double*, double*)
+        np.ndarray M(np.ndarray, np.ndarray, np.ndarray)
 
         int number_of_vertices()
         int number_of_faces()
@@ -76,35 +71,9 @@ cdef class Surface:
             return f(self, p, U, X)
         return wrapped_f
 
-    # TODO Shift this to C++ in doosabin_pyx.h.
     @evaluate
-    def M(self, np.ndarray[np.int32_t, ndim=1, mode='c'] p,
-                np.ndarray[DTYPE_t, ndim=2, mode='c'] U,
-                np.ndarray[DTYPE_t, ndim=2] X):
-        cdef Py_ssize_t n = p.shape[0]
-        cdef np.ndarray[DTYPE_t, ndim=2, mode='c'] R = np.empty(
-            (n, 3), dtype=DTYPE)
-        cdef np.ndarray[np.int32_t, ndim=1] argsort_p = np.require(
-            np.argsort(p), dtype=np.int32)
-
-        cdef Py_ssize_t i, j, k, l, pj, p0 = -1
-        cdef np.ndarray[DTYPE_t, ndim=2, mode='c'] pX
-
-        for i in range(n):
-            j = argsort_p[i]
-            pj = p[j]
-            if pj != p0:
-                m = self._surface.patch_vertex_indices(pj).size()
-                pX = np.empty((m, 3), dtype=DTYPE)
-                for k in range(m):
-                    for l in range(3):
-                        pX[k, l] = X[self._surface.patch_vertex_indices(pj)[k], l]
-                p0 = pj
-
-            self._surface.M(p[j], <DTYPE_t*>U.data + 2 * j, <DTYPE_t*>pX.data,
-                            <DTYPE_t*>R.data + 3 * j)
-
-        return R
+    def M(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        return self._surface.M(p, U, X)
 
     def uniform_parameterisation(self, np.int32_t N):
         p, U, T = self._surface.UniformParameterisation(N)

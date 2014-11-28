@@ -4,6 +4,7 @@
 
 // Includes
 #include "doosabin.h"
+#include "Math/linalg_python.h"
 #include "Mesh/mesh_python.h"
 
 // Surface
@@ -16,21 +17,53 @@ class Surface {
           mesh_python::PyArrayObject_to_CellArray(npy_raw_face_array)))
   {}
 
-  #define EVALUATE(M) \
-  void M(int p, const double* u, const double* X, double* r) const { \
-    const Eigen::Map<const Eigen::Vector2d> _u(u); \
-    const Eigen::Map<const Eigen::MatrixXd> _X( \
-      X, 3, surface_.patch_vertex_indices(p).size()); \
-    Eigen::Map<Eigen::Vector3d> _r(r); \
-    surface_.M(p, _u, _X, &_r); \
+  PyArrayObject* M(PyArrayObject* npy_p,
+                   PyArrayObject* npy_U,
+                   PyArrayObject* npy_X) {
+    auto p = linalg_python::PyArrayObject_to_VectorMap<int>(npy_p);
+    auto U = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_U);
+    auto X = linalg_python::PyArrayObject_to_MatrixMap<double>(npy_X);
+
+    // Sort `p` so that all evaluations over each patch are done together.
+    std::vector<int> argsort_p(p->size());
+    for (size_t i = 0; i < argsort_p.size(); ++i) {
+      argsort_p[i] = static_cast<int>(i);
+    }
+    auto& _p = *p;
+    std::sort(argsort_p.begin(), argsort_p.end(), [&_p](int i, int j) {
+      return _p[i] < _p[j];
+    });
+
+    // Allocate output array `R`.
+    npy_intp dims[2] = {argsort_p.size(), 3};
+    PyArrayObject* npy_R = (PyArrayObject*)PyArray_EMPTY(
+      2, dims, NPY_FLOAT64, 0);
+
+    // `Xp_data` holds the pointers for the instance of
+    // `MatrixOfColumnPointers`.
+    typedef linalg::MatrixOfColumnPointers<double> MatrixOfColumnPointers;
+    std::vector<const double*> Xp_data;
+    Xp_data.reserve(doosabin::kMaxNNoAlloc);
+
+    int p0 = -1;
+    for (size_t i = 0; i < argsort_p.size(); ++i) {
+      int j = argsort_p[i];
+      int pj = _p[j];
+      if (pj != p0) {
+        Xp_data.clear();
+        for (int l : surface_.patch_vertex_indices(pj)) {
+          Xp_data.push_back(X->data() + 3 * l);
+        }
+        p0 = pj;
+      }
+
+      Eigen::Map<Eigen::Vector3d> _r((double*)PyArray_DATA(npy_R) + 3 * j);
+      MatrixOfColumnPointers Xp(Xp_data.data(), 3, Xp_data.size());
+      surface_.M(pj, U->data() + 2 * j, Xp, &_r);
+    }
+
+    return npy_R;
   }
-  EVALUATE(M);
-  EVALUATE(Mu);
-  EVALUATE(Mv);
-  EVALUATE(Muu);
-  EVALUATE(Muv);
-  EVALUATE(Mvv);
-  #undef EVALUATE
 
   inline int number_of_vertices() const {
     return surface_.number_of_vertices();
