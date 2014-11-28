@@ -48,18 +48,6 @@ cdef class Surface:
     def __dealloc__(self):
         del self._surface
 
-    @property
-    def number_of_vertices(self):
-        return self._surface.number_of_vertices()
-
-    @property
-    def number_of_faces(self):
-        return self._surface.number_of_faces()
-
-    @property
-    def number_of_patches(self):
-        return self._surface.number_of_patches()
-
     @staticmethod
     def evaluate(f):
         def wrapped_f(self, p, U, X):
@@ -110,3 +98,15 @@ cdef class Surface:
         p, U, T = self._surface.UniformParameterisation(N)
         # Return `T` as a list of list objects.
         return p, U, raw_face_array_to_sequence(map(int, T))
+
+    @property
+    def number_of_vertices(self):
+        return self._surface.number_of_vertices()
+
+    @property
+    def number_of_faces(self):
+        return self._surface.number_of_faces()
+
+    @property
+    def number_of_patches(self):
+        return self._surface.number_of_patches()

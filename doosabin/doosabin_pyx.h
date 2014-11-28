@@ -45,22 +45,6 @@ class Surface {
   EVALUATE(Mvv);
 #undef EVALUATE
 
-  inline int number_of_vertices() const {
-    return surface_.number_of_vertices();
-  }
-
-  inline int number_of_faces() const {
-    return surface_.number_of_faces();
-  }
-
-  inline int number_of_patches() const {
-    return surface_.number_of_patches();
-  }
-
-  inline const std::vector<int>& patch_vertex_indices(const int p) const {
-    return surface_.patch_vertex_indices(p);
-  }
-
   PyObject* UniformParameterisation(int N) {
     Eigen::VectorXi p;
     Eigen::MatrixXd U;
@@ -93,6 +77,22 @@ class Surface {
     PyTuple_SET_ITEM(r, 1, (PyObject*)npy_U);
     PyTuple_SET_ITEM(r, 2, (PyObject*)npy_T);
     return r;
+  }
+
+  inline int number_of_vertices() const {
+    return surface_.number_of_vertices();
+  }
+
+  inline int number_of_faces() const {
+    return surface_.number_of_faces();
+  }
+
+  inline int number_of_patches() const {
+    return surface_.number_of_patches();
+  }
+
+  inline const std::vector<int>& patch_vertex_indices(const int p) const {
+    return surface_.patch_vertex_indices(p);
   }
 
  private:
@@ -145,7 +145,6 @@ class Surface {
 
     return npy_R;
   }
-
 
  private:
   DooSabinSurface surface_;
