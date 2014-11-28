@@ -684,7 +684,7 @@ class Surface {
     }
   }
 
-  int number_of_vertices() {
+  int number_of_vertices() const {
     return _control_mesh.number_of_vertices();
   }
 
