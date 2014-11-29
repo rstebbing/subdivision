@@ -3,6 +3,12 @@
 # Imports
 import numpy as np
 
+# Don't fail if can't important compiled module `doosabin_`.
+try:
+    from doosabin_ import Surface
+except ImportError:
+    pass
+
 # Doo-Sabin Subdivision Matrices
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
