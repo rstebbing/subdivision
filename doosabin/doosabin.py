@@ -9,6 +9,9 @@ try:
 except ImportError:
     pass
 
+# Requires common/python on `PYTHONPATH`.
+from itertools_ import count, pairwise
+
 # Doo-Sabin Subdivision Matrices
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
@@ -210,3 +213,142 @@ biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
     uniform_quadratic_bspline_position_basis,
     uniform_quadratic_bspline_second_derivative_basis,
     'biquadratic_bspline_dv_dv_basis')
+
+# General Mesh Operations
+
+# subdivide
+def subdivide(T, X=None):
+    # Get necessary topology information about `T`.
+    vertex_to_half_edges = {}
+    vertex_to_faces = {}
+    half_edge_to_opposite_edge = {}
+    half_edge_to_face = {}
+
+    for face_index, face in enumerate(T):
+        for half_edge in pairwise(face, repeat=True):
+            i, j = half_edge
+            vertex_to_half_edges.setdefault(i, []).append(half_edge)
+            vertex_to_faces.setdefault(i, []).append(face_index)
+            half_edge_to_opposite_edge[half_edge] = None
+            half_edge_to_face[half_edge] = face_index
+
+    for face in T:
+        for half_edge in pairwise(face, repeat=True):
+            opposite_half_edge = half_edge[::-1]
+            if opposite_half_edge in half_edge_to_opposite_edge:
+                half_edge_to_opposite_edge[half_edge] = opposite_half_edge
+
+    # Subdivide all vertices to fill `child_X` if `X` is available.
+    if X is None:
+        child_X = None
+    else:
+        N_child_X = sum(map(len, T))
+        child_X = np.empty((N_child_X, X.shape[1]), dtype=np.float64)
+        child_V_index = count()
+
+        for face_index, face in enumerate(T):
+            X_face = X[face]
+            w = doosabin_weights(X_face.shape[0])
+
+            for i in face:
+                child_i = next(child_V_index)
+                child_X[child_i] = np.dot(w, X_face)
+                w = np.roll(w, 1)
+
+    # Fill `V_to_child_X`.
+    V_to_child_X = {}
+    child_V_index = count()
+
+    for face_index, face in enumerate(T):
+        for i in face:
+            child_i = next(child_V_index)
+            V_to_child_X[face_index, i] = child_i
+
+    # Initialise `child_T` to original faces but with new child vertex indices.
+    child_T = []
+    child_V_index = count()
+
+    for face_index, face in enumerate(T):
+        child_face = map(lambda i: next(child_V_index), face)
+        child_T.append(child_face)
+
+    # Add child faces which occur at patch vertices.
+    for i, half_edges in vertex_to_half_edges.iteritems():
+        # Check if vertex `i` is a patch vertex.
+        # I.e. all half edges from `i` have opposities which terminate at `i`.
+        opposite_edges = map(lambda h: half_edge_to_opposite_edge[h],
+                             half_edges)
+
+        if None in opposite_edges:
+            continue
+
+        # Get `ordered_face_indices` which respects the same vertex ordering.
+        # (The "within-face" vertex ordering.)
+        unordered_face_indices = list(vertex_to_faces[i])
+        ordered_face_indices = [unordered_face_indices.pop(0)]
+
+        while len(unordered_face_indices) > 1:
+            last_face_index = ordered_face_indices[-1]
+            for half_edge in pairwise(T[last_face_index], repeat=True):
+                if half_edge[1] == i:
+                    break
+
+            next_half_edge = half_edge[::-1]
+
+            face_index = half_edge_to_face[next_half_edge]
+            index = unordered_face_indices.index(face_index)
+            ordered_face_indices.append(unordered_face_indices.pop(index))
+
+        ordered_face_indices.append(unordered_face_indices.pop(0))
+
+        # Construct `child_face` from `ordered_face_indices`.
+        child_face = map(lambda f: V_to_child_X[f, i], ordered_face_indices)
+        child_T.append(child_face)
+
+    # Add child faces which occur across edges.
+    for face_index, face in enumerate(T):
+        for half_edge in pairwise(face, repeat=True):
+            # Only process the edge once.
+            i, j = half_edge
+            if j < i:
+                continue
+
+            # Can't construct a face across a single half edge.
+            opposite_half_edge = half_edge_to_opposite_edge[half_edge]
+            if opposite_half_edge is None:
+                continue
+
+            # Construct `child_face`.
+            opposite_face_index = half_edge_to_face[opposite_half_edge]
+            keys = [(opposite_face_index, i),
+                    (opposite_face_index, j),
+                    (face_index, j),
+                    (face_index, i)]
+            child_face = map(lambda k: V_to_child_X[k], keys)
+            child_T.append(child_face)
+
+    return (child_T, child_X) if X is not None else child_T
+
+# is_initial_subdivision_required
+def is_initial_subdivision_required(T):
+    vertex_to_half_edges = {}
+    half_edges = set()
+    for face_index, face in enumerate(T):
+        for half_edge in pairwise(face, repeat=True):
+            i, j = half_edge
+            vertex_to_half_edges.setdefault(i, []).append(half_edge)
+            half_edges.add(half_edge)
+    half_edges = frozenset(half_edges)
+
+    # Subdivision required if valence of a patch centre is not four.
+    for i, from_i in vertex_to_half_edges.iteritems():
+        if len(from_i) == 4:
+            continue
+
+        for half_edge in from_i:
+            if half_edge[::-1] not in half_edges:
+                break
+        else:
+            return True
+
+    return False
