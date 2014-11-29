@@ -107,13 +107,13 @@ class Patch {
   explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
         int depth = 0)
-      : _parent(parent),
-        _depth(depth),
-        _face_array(face_array) {
+      : parent_(parent),
+        depth_(depth),
+        face_array_(face_array) {
     Initialise();
-    if (_depth == 0) {
-      _S.setIdentity(_I.size(), _I.size());
-      if (!_is_valid) {
+    if (depth_ == 0) {
+      S_.setIdentity(I_.size(), I_.size());
+      if (!is_valid_) {
         Subdivide();
       }
     }
@@ -135,17 +135,17 @@ class Patch {
   #undef EVALUATE
 
   const std::vector<int>& vertex_indices() const {
-    return _I;
+    return I_;
   }
 
   const std::vector<int>& ordered_face_indices() const {
-    return _ordered_face_indices;
+    return ordered_face_indices_;
   }
 
  private:
   int GetFaceIndexWithAdjacentVertex(int j) const {
-    for (int i = 0; i < _face_array->number_of_faces(); ++i) {
-      if (_face_array->face(i)[1] == j) {
+    for (int i = 0; i < face_array_->number_of_faces(); ++i) {
+      if (face_array_->face(i)[1] == j) {
         return i;
       }
     }
@@ -153,10 +153,10 @@ class Patch {
   }
 
   int GetFaceIndexOfFace(const std::vector<int>& face) const {
-    auto it = std::find(face.begin(), face.end(), _I[0]);
+    auto it = std::find(face.begin(), face.end(), I_[0]);
     if (it != face.end()) {
-      int face_index = _face_array->HalfEdgeToFaceIndex(
-        _I[0], face[(std::distance(face.begin(), it) + 1) % face.size()]);
+      int face_index = face_array_->HalfEdgeToFaceIndex(
+        I_[0], face[(std::distance(face.begin(), it) + 1) % face.size()]);
       if (face_index >= 0) {
         return face_index;
       }
@@ -167,46 +167,46 @@ class Patch {
  private:
   // Initialise
   void Initialise() {
-    // Set `_is_valid`.
-    assert(_face_array->number_of_faces() == 4);
-    _is_valid = true;
-    for (int j = 0; j < _face_array->number_of_faces(); ++j) {
-      if (_face_array->number_of_sides(j) != 4) {
-        _is_valid = false;
+    // Set `is_valid_`.
+    assert(face_array_->number_of_faces() == 4);
+    is_valid_ = true;
+    for (int j = 0; j < face_array_->number_of_faces(); ++j) {
+      if (face_array_->number_of_sides(j) != 4) {
+        is_valid_ = false;
         break;
       }
     }
 
-    // Reorder the vertex indices and face ordering in `_face_array`.
+    // Reorder the vertex indices and face ordering in `face_array_`.
 
     // Determine the common vertex `i` for all faces.
-    const int i = _face_array->FindCommonVertex();
+    const int i = face_array_->FindCommonVertex();
     assert(i >= 0);
 
     // Order the vertices in each face so that `i` is the first vertex.
     // Order the faces to also respect the vertex ordering.
-    const int n_faces = _face_array->number_of_faces();
+    const int n_faces = face_array_->number_of_faces();
     int faces_remaining = n_faces;
 
-    _ordered_face_indices.reserve(n_faces);
+    ordered_face_indices_.reserve(n_faces);
 
     // Order first face.
-    _face_array->RotateFaceToVertex(0, i);
-    _ordered_face_indices.push_back(0);
+    face_array_->RotateFaceToVertex(0, i);
+    ordered_face_indices_.push_back(0);
 
     // Order remaining faces.
     while (--faces_remaining) {
-      int last_face_index = _ordered_face_indices.back();
-      int n = _face_array->number_of_sides(last_face_index);
-      auto* f = _face_array->face(last_face_index);
+      int last_face_index = ordered_face_indices_.back();
+      int n = face_array_->number_of_sides(last_face_index);
+      auto* f = face_array_->face(last_face_index);
       const int last_vertex = f[n - 1];
 
       // Search for half edge (`i`, `last_vertex`) to find `next_face_offset`.
       int next_face_index = -1;
 
       for (int j = 0; j < n_faces; ++j) {
-        n = _face_array->number_of_sides(j);
-        f = _face_array->face(j);
+        n = face_array_->number_of_sides(j);
+        f = face_array_->face(j);
 
         for (int k = 0; k < n; ++k) {
           if (i == f[k] && last_vertex == f[(k + 1) % n]) {
@@ -223,23 +223,23 @@ class Patch {
       // Ensure the half edge was found.
       assert(next_face_index >= 0);
 
-      _face_array->RotateFaceToVertex(next_face_index, i);
-      _ordered_face_indices.push_back(next_face_index);
+      face_array_->RotateFaceToVertex(next_face_index, i);
+      ordered_face_indices_.push_back(next_face_index);
     }
 
-    _face_array->PermuteFaces(_ordered_face_indices);
+    face_array_->PermuteFaces(ordered_face_indices_);
 
-    // Construct `_I` from the reordered `_face_array`.
-    _I.push_back(i);
+    // Construct `I_` from the reordered `face_array_`.
+    I_.push_back(i);
 
-    for (int j = 0; j < _face_array->number_of_faces(); ++j) {
-      int n = _face_array->number_of_sides(j);
-      auto* f = _face_array->face(j);
-      std::copy(f + 1, f + n - 1, std::back_inserter(_I));
+    for (int j = 0; j < face_array_->number_of_faces(); ++j) {
+      int n = face_array_->number_of_sides(j);
+      auto* f = face_array_->face(j);
+      std::copy(f + 1, f + n - 1, std::back_inserter(I_));
     }
 
     // Required by `GetFaceIndexOfFace`.
-    _face_array->EnsureHalfEdgeToFaceIndex();
+    face_array_->EnsureHalfEdgeToFaceIndex();
   }
 
   // Subdivision
@@ -247,29 +247,29 @@ class Patch {
     // Create `S` to include all of the child vertices.
     int n_child_vertices = 0;
     for (int i = 0; i < 4; ++i) {
-      n_child_vertices += _face_array->number_of_sides(i);
+      n_child_vertices += face_array_->number_of_sides(i);
     }
 
-    Matrix S(n_child_vertices, _I.size());
+    Matrix S(n_child_vertices, I_.size());
     S.fill(0);
 
     // Fill `S` using the Doo-Sabin subdivision weights.
     int child_index = 0;
     for (int i = 0; i < 4; ++i) {
       // Get subdivision weights of face `i` with `n` vertices.
-      const int n = _face_array->number_of_sides(i);
+      const int n = face_array_->number_of_sides(i);
       Vector w;
       DooSabinWeights(n, &w);
 
       // Get `face_indices_in_I`.
       std::vector<int> face_indices_in_I(n);
-      auto f = _face_array->face(i);
+      auto f = face_array_->face(i);
 
       for (int j = 0; j < n; ++j) {
-        // Find index of vertex `f[j]` in `_I`.
-        auto it = std::find(_I.begin(), _I.end(), f[j]);
-        assert(it != _I.end());
-        face_indices_in_I[j] = static_cast<int>(std::distance(_I.begin(), it));
+        // Find index of vertex `f[j]` in `I_`.
+        auto it = std::find(I_.begin(), I_.end(), f[j]);
+        assert(it != I_.end());
+        face_indices_in_I[j] = static_cast<int>(std::distance(I_.begin(), it));
       }
 
       // Copy `w` into `S` for each child vertex.
@@ -283,15 +283,15 @@ class Patch {
     }
 
     // Get `S` to reference the top level vertices.
-    assert(_S.rows() > 0 && _S.cols() > 0);
-    S *= _S;
+    assert(S_.rows() > 0 && S_.cols() > 0);
+    S *= S_;
 
     // Build `child_face_array`.
     child_index = 0;
     std::vector<int> raw_child_face_array;
     raw_child_face_array.push_back(4);
     for (int i = 0; i < 4; ++i) {
-      int n = _face_array->number_of_sides(i);
+      int n = face_array_->number_of_sides(i);
       raw_child_face_array.push_back(n);
 
       for (int j = 0; j < n; ++j) {
@@ -343,21 +343,21 @@ class Patch {
       child_patch_array->PermuteFaces(child_face_permutation);
 
       // Build `child`.
-      auto child = new Patch<Scalar>(child_patch_array, this, _depth + 1);
+      auto child = new Patch<Scalar>(child_patch_array, this, depth_ + 1);
 
-      // Set the child subdivision matrix `_S` and subdivide if
+      // Set the child subdivision matrix `S_` and subdivide if
       // necessary.
-      // NOTE `Subdivide` is only called in `Initialise` for `_depth = 0` so
+      // NOTE `Subdivide` is only called in `Initialise` for `depth_ = 0` so
       // this is all OK.
-      child->_S.resize(child->_I.size(), S.cols());
-      for (int i = 0; i < child->_I.size(); ++i) {
-        child->_S.row(i) = S.row(child->_I[i]);
+      child->S_.resize(child->I_.size(), S.cols());
+      for (int i = 0; i < child->I_.size(); ++i) {
+        child->S_.row(i) = S.row(child->I_[i]);
       }
-      if (!child->_is_valid && child->_depth < kMaxSubdivisionDepth) {
+      if (!child->is_valid_ && child->depth_ < kMaxSubdivisionDepth) {
         child->Subdivide();
       }
 
-      _children.emplace_back(child);
+      children_.emplace_back(child);
     }
   }
 
@@ -372,30 +372,30 @@ class Patch {
 
   template <typename F, typename G, typename E, typename TX, typename R>
   void EvaluateInternal(Vector2* u, const TX& X, R* r) const {
-    if (_is_valid) {
+    if (is_valid_) {
       // Get the basis vector for the quantity and evaluate.
       Eigen::Matrix<Scalar, kNumBiquadraticBsplineBasis, 1> b;
       BiquadraticBsplineBasis<F, G>(*u, &b);
       static const E e;
-      e(_depth, _S, b, X, r);
+      e(depth_, S_, b, X, r);
     } else {
-      assert(_depth <= (kMaxSubdivisionDepth - 1));
-      if (_depth == (kMaxSubdivisionDepth - 1)) {
+      assert(depth_ <= (kMaxSubdivisionDepth - 1));
+      if (depth_ == (kMaxSubdivisionDepth - 1)) {
         // On second to last level of subdivision, adjust `U` so that it falls
         // within a valid patch.
         AdjustUForValidChild(u);
       }
 
       // Get child and translate `u` for child patch.
-      _children[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
+      children_[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
     }
   }
 
   void AdjustUForValidChild(Vector2* u) const {
-    assert(_children.size() > 0);
+    assert(children_.size() > 0);
 
-    for (int i = 0; i < _children.size(); ++i) {
-      if (_children[i]->_is_valid) {
+    for (int i = 0; i < children_.size(); ++i) {
+      if (children_[i]->is_valid_) {
         (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kUEps);
         (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kUEps);
         return;
@@ -503,17 +503,17 @@ class Patch {
   };
 
  private:
-  std::unique_ptr<FaceArray> _face_array;
-  const Patch<Scalar>* _parent;
-  int _depth;
+  std::unique_ptr<FaceArray> face_array_;
+  const Patch<Scalar>* parent_;
+  int depth_;
 
-  bool _is_valid;
-  std::vector<int> _ordered_face_indices;
-  std::vector<int> _I;
+  bool is_valid_;
+  std::vector<int> ordered_face_indices_;
+  std::vector<int> I_;
 
-  Matrix _S;
+  Matrix S_;
 
-  std::vector<std::unique_ptr<Patch<Scalar>>> _children;
+  std::vector<std::unique_ptr<Patch<Scalar>>> children_;
 };
 
 // Surface
@@ -528,14 +528,14 @@ class Surface {
   // Copy of `control_mesh` is required since mutable routines (e.g.
   // `EnsureVertices`) are used.
   explicit Surface(const GeneralMesh& control_mesh)
-      : _control_mesh(control_mesh) {
+      : control_mesh_(control_mesh) {
     Initialise();
   }
 
   #define EVALUATE(M) \
   template <typename U, typename TX, typename R> \
   inline void M(int p, const U& u, const TX& X, R* r) const { \
-    _patches[p]->M(u, X, r); \
+    patches_[p]->M(u, X, r); \
   }
   EVALUATE(M);
   EVALUATE(Mu);
@@ -609,18 +609,18 @@ class Surface {
 
     // Add quadrilaterals between patches.
     for (int i_index = 0; i_index < number_of_patches(); ++i_index) {
-      int i = _patch_vertex_indices[i_index];
+      int i = patch_vertex_indices_[i_index];
       int i_offset = i_index * (N * N);
 
-      for (int half_edge_index : _control_mesh.half_edges_from_vertex(i)) {
+      for (int half_edge_index : control_mesh_.half_edges_from_vertex(i)) {
         // Find adjacent patch at vertex `j` (with patch offset `j_offset`).
         // Skip if `i < j` so that the boundary is only processed once.
-        int j = _control_mesh.half_edge(half_edge_index).second;
+        int j = control_mesh_.half_edge(half_edge_index).second;
         if (i < j) {
           continue;
         }
 
-        int j_index = _vertex_to_patch_index[j];
+        int j_index = vertex_to_patch_index_[j];
         if (j_index < 0) {
           continue;
         }
@@ -629,9 +629,9 @@ class Surface {
 
         // Get the border offsets for each patch.
         auto& i_vertex_offsets = border_offsets[
-          _patches[i_index]->GetFaceIndexWithAdjacentVertex(j)];
+          patches_[i_index]->GetFaceIndexWithAdjacentVertex(j)];
         auto& j_vertex_offsets = border_offsets[
-          _patches[j_index]->GetFaceIndexWithAdjacentVertex(i)];
+          patches_[j_index]->GetFaceIndexWithAdjacentVertex(i)];
 
         // Add quadrilaterals.
         for (int k = 0; k < (N - 1); ++k) {
@@ -648,11 +648,11 @@ class Surface {
     // Add faces at corners of patches.
     std::vector<int> current_face, next_face;
 
-    for (int face_index = 0; face_index < _control_mesh.number_of_faces();
+    for (int face_index = 0; face_index < control_mesh_.number_of_faces();
          ++face_index) {
-      auto f = _control_mesh.face(face_index);
+      auto f = control_mesh_.face(face_index);
       current_face.clear();
-      std::copy(f, f + _control_mesh.number_of_sides(face_index),
+      std::copy(f, f + control_mesh_.number_of_sides(face_index),
                 std::back_inserter(current_face));
 
       next_face.clear();
@@ -661,7 +661,7 @@ class Surface {
 
       for (int i : current_face) {
         // Get patch index `i_index` for vertex `i` from `face`.
-        int i_index = _vertex_to_patch_index[i];
+        int i_index = vertex_to_patch_index_[i];
         if (i_index < 0) {
           is_next_face_valid = false;
           break;
@@ -670,7 +670,7 @@ class Surface {
         // Get offset of `current_face` in the patch and set
         // `i_vertex_offsets`.
         auto& i_vertex_offsets = border_offsets[
-          _patches[i_index]->GetFaceIndexOfFace(current_face)];
+          patches_[i_index]->GetFaceIndexOfFace(current_face)];
         next_face.push_back(i_index * (N * N) + i_vertex_offsets[0]);
         ++next_face[0];
       }
@@ -683,23 +683,23 @@ class Surface {
   }
 
   inline int number_of_vertices() const {
-    return _control_mesh.number_of_vertices();
+    return control_mesh_.number_of_vertices();
   }
 
   inline int number_of_faces() const {
-    return _control_mesh.number_of_faces();
+    return control_mesh_.number_of_faces();
   }
 
   inline int number_of_patches() const {
-    return static_cast<int>(_patch_vertex_indices.size());
+    return static_cast<int>(patch_vertex_indices_.size());
   }
 
   inline const std::vector<int>& patch_vertex_indices(int p) const {
-    return _patches[p]->vertex_indices();
+    return patches_[p]->vertex_indices();
   }
 
   inline const std::vector<int>& adjacent_patch_indices(int p) const {
-    return _adjacent_patch_indices[p];
+    return adjacent_patch_indices_[p];
   }
 
  private:
@@ -710,18 +710,18 @@ class Surface {
 
   void InitialisePatchIndices() {
     // FIXME This is assuming contiguous vertex labelling starting at 0.
-    _control_mesh.EnsureVertices();
-    auto& vertices = _control_mesh.vertices();
-    _vertex_to_patch_index.resize(vertices.size());
+    control_mesh_.EnsureVertices();
+    auto& vertices = control_mesh_.vertices();
+    vertex_to_patch_index_.resize(vertices.size());
 
     int patch_index = 0;
     for (int i : vertices) {
-      if (_control_mesh.is_vertex_closed(i)) {
-        assert(_control_mesh.AdjacentVertices(i).size() == 4);
-        _patch_vertex_indices.push_back(i);
-        _vertex_to_patch_index[i] = patch_index++;
+      if (control_mesh_.is_vertex_closed(i)) {
+        assert(control_mesh_.AdjacentVertices(i).size() == 4);
+        patch_vertex_indices_.push_back(i);
+        vertex_to_patch_index_[i] = patch_index++;
       } else {
-        _vertex_to_patch_index[i] = -1;
+        vertex_to_patch_index_[i] = -1;
       }
     }
   }
@@ -730,11 +730,11 @@ class Surface {
     std::map<int, std::vector<std::pair<int, int>>> vertex_to_half_edges;
     std::map<std::pair<int, int>, int> half_edge_to_vertex;
 
-    _patches.reserve(_patch_vertex_indices.size());
-    for (int i : _patch_vertex_indices) {
+    patches_.reserve(patch_vertex_indices_.size());
+    for (int i : patch_vertex_indices_) {
       // Initialise `patch`.
-      std::vector<int> face_indices = _control_mesh.FacesAtVertex(i);
-      auto patch = new Patch(new FaceArray(_control_mesh.Faces(face_indices)));
+      std::vector<int> face_indices = control_mesh_.FacesAtVertex(i);
+      auto patch = new Patch(new FaceArray(control_mesh_.Faces(face_indices)));
 
       // Get the permuted face indices.
       std::vector<int> permuted_face_indices;
@@ -753,36 +753,36 @@ class Surface {
       }
 
       // Save the generated patch.
-      _patches.emplace_back(patch);
+      patches_.emplace_back(patch);
     }
 
-    // Set `_adjacent_patch_indices`.
-    _control_mesh.EnsureVertices();
+    // Set `adjacent_patch_indices_`.
+    control_mesh_.EnsureVertices();
 
     int p = 0;
-    _adjacent_patch_indices.resize(_patches.size());
-    for (int i : _patch_vertex_indices) {
+    adjacent_patch_indices_.resize(patches_.size());
+    for (int i : patch_vertex_indices_) {
       for (auto& half_edge : vertex_to_half_edges[i]) {
         auto opposite_half_edge = std::make_pair(half_edge.second,
                                                  half_edge.first);
         int adj_patch_index = -1;
         auto it = half_edge_to_vertex.find(opposite_half_edge);
         if (it != half_edge_to_vertex.end()) {
-          adj_patch_index = _vertex_to_patch_index[it->second];
+          adj_patch_index = vertex_to_patch_index_[it->second];
         }
-        _adjacent_patch_indices[p].push_back(adj_patch_index);
+        adjacent_patch_indices_[p].push_back(adj_patch_index);
       }
       ++p;
     }
   }
 
  private:
-  GeneralMesh _control_mesh;
+  GeneralMesh control_mesh_;
 
-  std::vector<int> _patch_vertex_indices;
-  std::vector<int> _vertex_to_patch_index;
-  std::vector<std::vector<int>> _adjacent_patch_indices;
-  std::vector<std::unique_ptr<Patch>> _patches;
+  std::vector<int> patch_vertex_indices_;
+  std::vector<int> vertex_to_patch_index_;
+  std::vector<std::vector<int>> adjacent_patch_indices_;
+  std::vector<std::unique_ptr<Patch>> patches_;
 };
 
 // SurfaceWalker
@@ -967,7 +967,7 @@ class SurfaceWalker {
     surface_->Mv(p, u, Xp, &mv);
   }
 
-private:
+ private:
   const Surface* surface_;
 };
 
