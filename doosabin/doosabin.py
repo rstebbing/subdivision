@@ -3,12 +3,6 @@
 # Imports
 import numpy as np
 
-# Don't fail if can't important compiled module `doosabin_`.
-try:
-    from doosabin_ import Surface
-except ImportError:
-    pass
-
 # Requires common/python on `PYTHONPATH`.
 from itertools_ import count, pairwise
 
@@ -216,8 +210,52 @@ biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
 
 # General Mesh Operations
 
+# raise_if_mesh_is_invalid
+def raise_if_mesh_is_invalid(T):
+    # Ensure all faces have at least 3 unique integer entries.
+    unique_i = set()
+    for i, t in enumerate(T):
+        if len(t) != len(set(t)):
+            raise ValueError('T[%d] contains duplicate entries' % i)
+        if len(t) < 3:
+            raise ValueError('len(T[%d]) < 3 (= %d)' % (i, len(t)))
+        for j in t:
+            if not (isinstance(j, int) or issubclass(type(j), np.integer)):
+                raise ValueError('T contains non-integer entry "%s"' % j)
+            unique_i.add(j)
+
+    # Ensure vertex indexing is 0-based and contiguous.
+    unique_i = sorted(unique_i)
+    if unique_i[0] != 0:
+        raise ValueError(
+            'labels in T are not zero-based: min(T) == %d (!= 0)' %
+            unique_i[0])
+    if unique_i[-1] != len(unique_i) - 1:
+        raise ValueError(
+            'labels in T are not contiguous: max(T) == %d (!= %d)' %
+            (unique_i[-1], len(unique_i) - 1))
+
+    # Ensure all faces are labelled consistently.
+    full_edge_to_half_edges = {}
+    for t in T:
+        for half_edge in pairwise(t, repeat=True):
+            i, j = half_edge
+            full_edge = (i, j) if i < j else (j, i)
+            try:
+                half_edges = full_edge_to_half_edges[full_edge]
+            except KeyError:
+                half_edges = set()
+                full_edge_to_half_edges[full_edge] = half_edges
+            else:
+                if half_edge in half_edges:
+                    raise ValueError('half edge (%d, %d) encountered '
+                                     '(at least) twice in T' % (i, j))
+            half_edges.add(half_edge)
+
 # subdivide
 def subdivide(T, X=None):
+    raise_if_mesh_is_invalid(T)
+
     # Get necessary topology information about `T`.
     vertex_to_half_edges = {}
     vertex_to_faces = {}
@@ -331,6 +369,8 @@ def subdivide(T, X=None):
 
 # is_initial_subdivision_required
 def is_initial_subdivision_required(T):
+    raise_if_mesh_is_invalid(T)
+
     vertex_to_half_edges = {}
     half_edges = set()
     for face_index, face in enumerate(T):
@@ -352,3 +392,15 @@ def is_initial_subdivision_required(T):
             return True
 
     return False
+
+# Don't fail if can't import compiled module `doosabin_`.
+try:
+    import doosabin_
+except ImportError:
+    pass
+else:
+    class Surface(doosabin_.Surface):
+        def __init__(self, T):
+            if is_initial_subdivision_required(T):
+                raise ValueError('T has a patch centre with valency != 4')
+            doosabin_.Surface(T)
