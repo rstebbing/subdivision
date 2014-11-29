@@ -1,5 +1,4 @@
 # doosabin_.pyx
-# cython: boundscheck=False
 
 # Imports
 import numpy as np
