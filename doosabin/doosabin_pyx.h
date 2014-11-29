@@ -106,7 +106,7 @@ class Surface {
 
     // Sort `p` so that all evaluations over each patch are done together.
     std::vector<int> argsort_p(p->size());
-    for (size_t i = 0; i < argsort_p.size(); ++i) {
+    for (std::vector<int>::size_type i = 0; i < argsort_p.size(); ++i) {
       argsort_p[i] = static_cast<int>(i);
     }
     auto& _p = *p;
@@ -127,7 +127,7 @@ class Surface {
     const Evaluator e(&surface_);
 
     int p0 = -1;
-    for (size_t i = 0; i < argsort_p.size(); ++i) {
+    for (std::vector<int>::size_type i = 0; i < argsort_p.size(); ++i) {
       int j = argsort_p[i];
       int pj = _p[j];
       if (pj != p0) {
