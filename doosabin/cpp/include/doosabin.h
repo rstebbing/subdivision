@@ -591,10 +591,10 @@ class Surface {
         for (int k = 0; k < (N - 1); ++k) {
           int l = i * (N * N) + j * N + k;
           T_.push_back(4);
-          T_.push_back(l);
           T_.push_back(l + 1);
-          T_.push_back(l + N + 1);
+          T_.push_back(l);
           T_.push_back(l + N);
+          T_.push_back(l + N + 1);
           ++T_[0];
         }
       }
@@ -638,10 +638,10 @@ class Surface {
         // Add quadrilaterals.
         for (int k = 0; k < (N - 1); ++k) {
           T_.push_back(4);
-          T_.push_back(i_offset + i_vertex_offsets[k]);
-          T_.push_back(j_offset + j_vertex_offsets[N - 1 - k]);
-          T_.push_back(j_offset + j_vertex_offsets[N - 2 - k]);
           T_.push_back(i_offset + i_vertex_offsets[k + 1]);
+          T_.push_back(j_offset + j_vertex_offsets[N - 2 - k]);
+          T_.push_back(j_offset + j_vertex_offsets[N - 1 - k]);
+          T_.push_back(i_offset + i_vertex_offsets[k]);
           ++T_[0];
         }
       }
@@ -673,7 +673,7 @@ class Surface {
         // `i_vertex_offsets`.
         auto& i_vertex_offsets = border_offsets[
           _patches[i_index]->GetFaceIndexOfFace(current_face)];
-        next_face.push_back(i_vertex_offsets[N - 1] + i_index * (N * N));
+        next_face.push_back(i_index * (N * N) + i_vertex_offsets[0]);
         ++next_face[0];
       }
 
