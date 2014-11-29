@@ -155,9 +155,8 @@ class Patch {
   int GetFaceIndexOfFace(const std::vector<int>& face) const {
     auto it = std::find(face.begin(), face.end(), _I[0]);
     if (it != face.end()) {
-      size_t j = std::distance(face.begin(), it);
       int face_index = _face_array->HalfEdgeToFaceIndex(
-        _I[0], face[(j + 1) % face.size()]);
+        _I[0], face[(std::distance(face.begin(), it) + 1) % face.size()]);
       if (face_index >= 0) {
         return face_index;
       }
@@ -555,16 +554,15 @@ class Surface {
     // Ensure `N >= 1`.
     N = std::max(N, 1);
 
-    const int num_patches = static_cast<int>(_patch_vertex_indices.size());
     const int samples_per_patch = N * N;
-    const int num_samples = num_patches * samples_per_patch;
+    const int num_samples = number_of_patches() * samples_per_patch;
 
     p->resize(num_samples);
     U->resize(2, num_samples);
 
     const Scalar delta = Scalar(1) / N;
 
-    for (int i = 0; i < num_patches; ++i) {
+    for (int i = 0; i < number_of_patches(); ++i) {
       for (int j = 0; j < N; ++j) {
         for (int k = 0; k < N; ++k) {
           int l = i * (N * N) + j * N + k;
@@ -586,7 +584,7 @@ class Surface {
     T_.push_back(0);
 
     // Add quadrilaterals within each patch.
-    for (int i = 0; i < num_patches; ++i) {
+    for (int i = 0; i < number_of_patches(); ++i) {
       for (int j = 0; j < (N - 1); ++j) {
         for (int k = 0; k < (N - 1); ++k) {
           int l = i * (N * N) + j * N + k;
@@ -610,7 +608,7 @@ class Surface {
     }
 
     // Add quadrilaterals between patches.
-    for (int i_index = 0; i_index < num_patches; ++i_index) {
+    for (int i_index = 0; i_index < number_of_patches(); ++i_index) {
       int i = _patch_vertex_indices[i_index];
       int i_offset = i_index * (N * N);
 
@@ -957,9 +955,9 @@ class SurfaceWalker {
     auto& patch_vertex_indices = surface_->patch_vertex_indices(p);
 
     // TODO Replace with better strategy which doesn't allocate dynamically.
-    size_t n = patch_vertex_indices.size();
-    Matrix Xp(X.rows(), patch_vertex_indices.size());
-    for (size_t i = 0; i < n; ++i) {
+    const std::vector<int>::size_type n = patch_vertex_indices.size();
+    Matrix Xp(X.rows(), n);
+    for (std::vector<int>::size_type i = 0; i < n; ++i) {
       Xp.col(i) = X.col(patch_vertex_indices[i]);
     }
 
