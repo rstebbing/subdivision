@@ -29,12 +29,12 @@ UTIL_CPP_INCLUDE = c.get('Include', 'UTIL_CPP_INCLUDE')
 
 # Setup.
 include_dirs = [NUMPY_INCLUDE, EIGEN_INCLUDE, UTIL_CPP_INCLUDE,
-                'include/', 'doosabin/',
+                'include/', 'doosabin/cpp/include/',
                 '.']
 
 setup(ext_modules=[
-        Extension('doosabin.doosabin',
-                  ['doosabin/doosabin.pyx'],
+        Extension('doosabin.doosabin_',
+                  ['doosabin/doosabin_.pyx'],
                   language='c++',
                   include_dirs=include_dirs),
       ],
