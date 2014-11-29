@@ -2,6 +2,7 @@
 
 # Imports
 import numpy as np
+from collections import defaultdict
 
 # Requires common/python on `PYTHONPATH`.
 from itertools_ import count, pairwise
@@ -257,16 +258,16 @@ def subdivide(T, X=None):
     raise_if_mesh_is_invalid(T)
 
     # Get necessary topology information about `T`.
-    vertex_to_half_edges = {}
-    vertex_to_faces = {}
+    vertex_to_half_edges = defaultdict(list)
+    vertex_to_faces = defaultdict(list)
     half_edge_to_opposite_edge = {}
     half_edge_to_face = {}
 
     for face_index, face in enumerate(T):
         for half_edge in pairwise(face, repeat=True):
             i, j = half_edge
-            vertex_to_half_edges.setdefault(i, []).append(half_edge)
-            vertex_to_faces.setdefault(i, []).append(face_index)
+            vertex_to_half_edges[i].append(half_edge)
+            vertex_to_faces[i].append(face_index)
             half_edge_to_opposite_edge[half_edge] = None
             half_edge_to_face[half_edge] = face_index
 
@@ -371,12 +372,12 @@ def subdivide(T, X=None):
 def is_initial_subdivision_required(T):
     raise_if_mesh_is_invalid(T)
 
-    vertex_to_half_edges = {}
+    vertex_to_half_edges = defaultdict(list)
     half_edges = set()
     for face_index, face in enumerate(T):
         for half_edge in pairwise(face, repeat=True):
             i, j = half_edge
-            vertex_to_half_edges.setdefault(i, []).append(half_edge)
+            vertex_to_half_edges[i].append(half_edge)
             half_edges.add(half_edge)
     half_edges = frozenset(half_edges)
 
