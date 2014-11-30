@@ -112,6 +112,9 @@ class Patch {
         face_array_(face_array) {
     Initialise();
     if (depth_ == 0) {
+      // Required by `GetFaceIndexOfFace`.
+      face_array_->EnsureHalfEdgeToFaceIndex();
+
       S_.setIdentity(I_.size(), I_.size());
       if (!is_valid_) {
         Subdivide();
@@ -237,9 +240,6 @@ class Patch {
       auto* f = face_array_->face(j);
       std::copy(f + 1, f + n - 1, std::back_inserter(I_));
     }
-
-    // Required by `GetFaceIndexOfFace`.
-    face_array_->EnsureHalfEdgeToFaceIndex();
   }
 
   // Subdivision
