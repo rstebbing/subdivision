@@ -478,34 +478,31 @@ class Patch {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
         Eigen::Map<Vector> St_b(St_b_data, S.cols());
-
-        St_b.noalias() = S.transpose() * b;
-        if (Exponent > 1) {
-          St_b *= pow(Scalar(Exponent), depth);
-        }
-        Repeat(St_b, X.rows(), r);
+        DoMultiplyAndRepeat(depth, S, b, &St_b, X.rows(), r);
       } else {
         Vector St_b;
-
-        St_b.noalias() = S.transpose() * b;
-        if (Exponent > 1) {
-          St_b *= pow(Scalar(Exponent), depth);
-        }
-        Repeat(St_b, X.rows(), r);
+        DoMultiplyAndRepeat(depth, S, b, &St_b, X.rows(), r);
       }
     }
 
    private:
-    template <typename STB, typename R>
-    inline void Repeat(const STB& St_b, typename STB::Index d, R* r) const {
+    template <typename S, typename B, typename STB, typename R>
+    inline void DoMultiplyAndRepeat(int depth, const S& S, const B& b,
+                                    STB* St_b, typename STB::Index d,
+                                    R* r) const {
+      St_b->noalias() = S.transpose() * b;
+      if (Exponent > 1) {
+        *St_b *= pow(Scalar(Exponent), depth);
+      }
+
       typedef typename STB::Index Index;
-      const Index n = St_b.size();
+      const Index n = St_b->size();
       r->resize((d * d) * n);
       r->setZero();
 
       for (Index i = 0; i < n; ++i) {
         for (Index j = 0; j < d; ++j) {
-          (*r)[d * d * i + d * j + j] = St_b[i];
+          (*r)[d * d * i + d * j + j] = (*St_b)[i];
         }
       }
     }
