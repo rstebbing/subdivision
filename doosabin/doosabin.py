@@ -312,7 +312,7 @@ def subdivide(T, X=None):
         child_T.append(child_face)
 
     # Add child faces which occur at patch vertices.
-    for i, half_edges in vertex_to_half_edges.iteritems():
+    for i, half_edges in vertex_to_half_edges.items():
         # Check if vertex `i` is a patch vertex.
         # I.e. all half edges from `i` have opposities which terminate at `i`.
         opposite_edges = map(lambda h: half_edge_to_opposite_edge[h],
@@ -382,7 +382,7 @@ def is_initial_subdivision_required(T):
     half_edges = frozenset(half_edges)
 
     # Subdivision required if valence of a patch centre is not four.
-    for i, from_i in vertex_to_half_edges.iteritems():
+    for i, from_i in vertex_to_half_edges.items():
         if len(from_i) == 4:
             continue
 

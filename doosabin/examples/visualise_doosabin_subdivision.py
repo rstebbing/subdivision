@@ -68,7 +68,7 @@ def main():
 
     num_subdivisions = max(args.num_subdivisions,
                            doosabin.is_initial_subdivision_required(T))
-    for i in xrange(num_subdivisions):
+    for i in range(num_subdivisions):
         T, X = doosabin.subdivide(T, X)
 
     surface = doosabin.Surface(T)
