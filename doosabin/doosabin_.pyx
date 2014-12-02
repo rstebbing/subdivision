@@ -92,6 +92,8 @@ cdef class Surface:
         return self._surface.Mvv(p, U, X)
 
     # TODO `Mx`.
+    # TODO `Mux`.
+    # TODO `Mvx`.
 
     def uniform_parameterisation(self, np.int32_t N):
         p, U, T = self._surface.UniformParameterisation(N)

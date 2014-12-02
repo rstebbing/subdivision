@@ -135,6 +135,8 @@ class Patch {
   EVALUATE(Muv, FirstDerivative, FirstDerivative, MultiplyAndScale<4>);
   EVALUATE(Mvv, Position, SecondDerivative, MultiplyAndScale<4>);
   EVALUATE(Mx, Position, Position, MultiplyAndRepeat<1>);
+  EVALUATE(Mux, FirstDerivative, Position, MultiplyAndRepeat<2>);
+  EVALUATE(Mvx, Position, FirstDerivative, MultiplyAndRepeat<2>);
   #undef EVALUATE
 
   const std::vector<int>& vertex_indices() const {
@@ -550,6 +552,8 @@ class Surface {
   EVALUATE(Muv);
   EVALUATE(Mvv);
   EVALUATE(Mx);
+  EVALUATE(Mux);
+  EVALUATE(Mvx);
   #undef EVALUATE
 
   template <typename P, typename TU>
