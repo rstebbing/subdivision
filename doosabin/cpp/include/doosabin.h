@@ -134,7 +134,7 @@ class Patch {
   EVALUATE(Muu, SecondDerivative, Position, MultiplyAndScale<4>);
   EVALUATE(Muv, FirstDerivative, FirstDerivative, MultiplyAndScale<4>);
   EVALUATE(Mvv, Position, SecondDerivative, MultiplyAndScale<4>);
-  EVALUATE(Mx, Position, Position, MultiplyAndRepeat);
+  EVALUATE(Mx, Position, Position, MultiplyAndRepeat<1>);
   #undef EVALUATE
 
   const std::vector<int>& vertex_indices() const {
@@ -469,6 +469,7 @@ class Patch {
     }
   };
 
+  template <int Exponent>
   class MultiplyAndRepeat {
    public:
     template <typename S, typename B, typename TX, typename R>
@@ -477,11 +478,19 @@ class Patch {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
         Eigen::Map<Vector> St_b(St_b_data, S.cols());
+
         St_b.noalias() = S.transpose() * b;
+        if (Exponent > 1) {
+          St_b *= pow(Scalar(Exponent), depth);
+        }
         Repeat(St_b, X.rows(), r);
       } else {
         Vector St_b;
+
         St_b.noalias() = S.transpose() * b;
+        if (Exponent > 1) {
+          St_b *= pow(Scalar(Exponent), depth);
+        }
         Repeat(St_b, X.rows(), r);
       }
     }
