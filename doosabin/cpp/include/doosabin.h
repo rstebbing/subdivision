@@ -799,7 +799,7 @@ class SurfaceWalker {
 
   template <typename TX, typename U, typename Delta, typename U1>
   bool ApplyUpdate(const TX& X, const int p, const U& u, const Delta& delta,
-                   int* p1, U1* u1) {
+                   int* p1, U1* u1) const {
     int p1_depth = -1;
     // TODO Replace with better strategy which doesn't allocate dynamically.
     std::vector<unsigned char> patch_index_explored(
