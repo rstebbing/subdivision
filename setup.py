@@ -38,6 +38,11 @@ modules = [
 ]
 
 setup(name='subdivision',
+      version='0.1',
+      author='Richard Stebbing',
+      author_email='richie.stebbing@gmail.com',
+      license='MIT',
+      url='http://www.whoateallthepy.com',
       packages=['subdivision'] + modules,
       ext_modules=[
         Extension('subdivision.doosabin.doosabin_',
@@ -46,4 +51,4 @@ setup(name='subdivision',
                   include_dirs=include_dirs +
                       ['cpp/doosabin/include/']),
       ],
-      cmdclass = {'build_ext' : build_ext})
+      cmdclass={'build_ext' : build_ext})
