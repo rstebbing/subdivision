@@ -4,7 +4,7 @@
 import argparse
 import numpy as np
 
-import doosabin
+from subdivision.doosabin import doosabin
 
 # Requires common/python on `PYTHONPATH`.
 import vtk_

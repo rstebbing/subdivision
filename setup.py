@@ -29,13 +29,21 @@ COMMON_CPP_INCLUDE = c.get('Include', 'COMMON_CPP_INCLUDE')
 
 # Setup.
 include_dirs = [NUMPY_INCLUDE, EIGEN_INCLUDE, COMMON_CPP_INCLUDE,
-                'include/', 'doosabin/cpp/include/',
+                'include/',
                 '.']
 
-setup(ext_modules=[
-        Extension('doosabin.doosabin_',
-                  ['doosabin/doosabin_.pyx'],
+modules = [
+    'subdivision.doosabin',
+    'subdivision.loop',
+]
+
+setup(name='subdivision',
+      packages=['subdivision'] + modules,
+      ext_modules=[
+        Extension('subdivision.doosabin.doosabin_',
+                  ['subdivision/doosabin/doosabin_.pyx'],
                   language='c++',
-                  include_dirs=include_dirs),
+                  include_dirs=include_dirs +
+                      ['cpp/doosabin/include/']),
       ],
       cmdclass = {'build_ext' : build_ext})
