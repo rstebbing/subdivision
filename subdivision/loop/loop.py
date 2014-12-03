@@ -10,6 +10,21 @@ from operator import add, mul
 # Requires common/python on `PYTHONPATH`.
 from sympy_ import sympy_polynomial_to_function
 
+# __all__.
+__all__ = ['g',
+           'subdivision_matrix',
+           'extended_subdivision_matrix',
+           'bigger_subdivision_matrix',
+           'picker_matrix',
+           'transform_u_to_subdivided_patch',
+           'recursive_evaluate',
+           'triangle_bspline_position_basis',
+           'triangle_bspline_du_basis',
+           'triangle_bspline_dv_basis',
+           'triangle_bspline_du_du_basis',
+           'triangle_bspline_du_dv_basis',
+           'triangle_bspline_dv_dv_basis']
+
 # Loop Subdivision Matrices
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
