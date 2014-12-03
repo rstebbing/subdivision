@@ -1,4 +1,4 @@
-# visualise_doosabin_subdivision.py
+# visualise_subdivision.py
 
 # Imports
 import argparse
