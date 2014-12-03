@@ -4,7 +4,7 @@
 import argparse
 import numpy as np
 
-from subdivision.doosabin import doosabin
+from subdivision import doosabin
 
 # Requires common/python on `PYTHONPATH`.
 import vtk_
@@ -71,7 +71,7 @@ def main():
     for i in range(num_subdivisions):
         T, X = doosabin.subdivide(T, X)
 
-    surface = doosabin.Surface(T)
+    surface = doosabin.surface(T)
 
     pd, Ud, Td = surface.uniform_parameterisation(args.sample_density)
     M = surface.M(pd, Ud, X)
