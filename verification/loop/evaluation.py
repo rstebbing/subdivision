@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-import loop
+from subdivision import loop
 from common import example_extraordinary_patch
 
 # main
