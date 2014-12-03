@@ -8,7 +8,10 @@ from itertools import count
 
 import matplotlib.pyplot as plt
 
-import doosabin
+# Note: Module is imported directly for access to
+# `NUM_BIQUADRATIC_BSPLINE_BASIS` and other non-exported variables which aren't
+# (typically) necessary.
+from subdivision.doosabin import doosabin
 from common import example_extraordinary_patch
 
 # Requires common/python on `PYTHONPATH`.

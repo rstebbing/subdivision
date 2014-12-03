@@ -6,7 +6,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-import doosabin
+from subdivision import doosabin
 from common import example_extraordinary_patch
 
 # Requires common/python on `PYTHONPATH`.
