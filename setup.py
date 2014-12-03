@@ -17,7 +17,7 @@ try:
 except AttributeError:
     NUMPY_INCLUDE = np.get_numpy_include()
 
-# `EIGEN_INCLUDE` and `UTIL_CPP_INCLUDE` from site.cfg.
+# `EIGEN_INCLUDE` and `COMMON_CPP_INCLUDE` from site.cfg.
 import ConfigParser
 c = ConfigParser.ConfigParser()
 # Preserve case. See:
@@ -25,10 +25,10 @@ c = ConfigParser.ConfigParser()
 c.optionxform = str
 c.read('site.cfg')
 EIGEN_INCLUDE = c.get('Include', 'EIGEN_INCLUDE')
-UTIL_CPP_INCLUDE = c.get('Include', 'UTIL_CPP_INCLUDE')
+COMMON_CPP_INCLUDE = c.get('Include', 'COMMON_CPP_INCLUDE')
 
 # Setup.
-include_dirs = [NUMPY_INCLUDE, EIGEN_INCLUDE, UTIL_CPP_INCLUDE,
+include_dirs = [NUMPY_INCLUDE, EIGEN_INCLUDE, COMMON_CPP_INCLUDE,
                 'include/', 'doosabin/cpp/include/',
                 '.']
 
