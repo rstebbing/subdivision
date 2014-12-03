@@ -61,6 +61,7 @@ def main():
     parser.add_argument('-d', '--disable', action='append', default=[],
                         choices={'T', 'M', 'N'})
     parser.add_argument('--num-subdivisions', type=int, default=0)
+    parser.add_argument('--opacity', type=float, default=1.0)
     args = parser.parse_args()
 
     z = EXAMPLES[args.example]
@@ -80,6 +81,8 @@ def main():
     N = np.cross(Mu, Mv)
     N /= np.linalg.norm(N, axis=1)[:, np.newaxis]
 
+    camera = vtk_.vtk.vtkCamera()
+
     a = {}
     if 'T' not in args.disable:
         a['T_points'] = vtk_.points(X, ('SetRadius', 0.05),
@@ -89,9 +92,10 @@ def main():
                                       ('SetNumberOfSides', 16))
 
     if 'M' not in args.disable:
-        a['M'] = vtk_.surface(Td, M)
+        a['M'] = vtk_.surface(Td, M, camera=camera)
         a['M'].GetProperty().SetColor(0.216, 0.494, 0.722)
         a['M'].GetProperty().SetSpecular(1.0)
+        a['M'].GetProperty().SetOpacity(args.opacity)
 
     if 'N' not in args.disable:
         i = np.arange(pd.size)
@@ -100,6 +104,17 @@ def main():
                             ('SetNumberOfSides', 16))
 
     ren, iren = vtk_.renderer(*a.values())
+
+    ren.SetActiveCamera(camera)
+
+    if args.example == 'doosabin_test':
+        camera.SetFocalPoint(1.8, 0.7, 0.7)
+        camera.SetPosition(-1.8, -4.6, 5.6)
+        camera.SetViewUp(0.3, 0.5, 0.8)
+        camera.SetParallelScale(2.5)
+    else:
+        ren.ResetCamera()
+
     iren.Initialize()
     iren.Start()
 
