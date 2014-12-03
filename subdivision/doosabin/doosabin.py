@@ -7,6 +7,31 @@ from collections import defaultdict
 # Requires common/python on `PYTHONPATH`.
 from itertools_ import count, pairwise
 
+# `doosabin_` doesn't need to be available.
+try:
+    import doosabin_
+except ImportError:
+    pass
+
+# __all__.
+__all__ = ['g',
+           'doosabin_weights',
+           'extended_subdivision_matrix',
+           'bigger_subdivision_matrix',
+           'picker_matrix',
+           'transform_u_to_subdivided_patch',
+           'recursive_evaluate',
+           'biquadratic_bspline_position_basis',
+           'biquadratic_bspline_du_basis',
+           'biquadratic_bspline_dv_basis',
+           'biquadratic_bspline_du_du_basis',
+           'biquadratic_bspline_du_dv_basis',
+           'biquadratic_bspline_dv_dv_basis',
+           'raise_if_mesh_is_invalid',
+           'subdivide',
+           'is_initial_subdivision_required',
+           'surface']
+
 # Doo-Sabin Subdivision Matrices
 
 # `g` is a namespace which provides `cos`, `pi` and `Rational`.
@@ -394,14 +419,8 @@ def is_initial_subdivision_required(T):
 
     return False
 
-# Don't fail if can't import compiled module `doosabin_`.
-try:
-    import doosabin_
-except ImportError:
-    pass
-else:
-    class Surface(doosabin_.Surface):
-        def __init__(self, T):
-            if is_initial_subdivision_required(T):
-                raise ValueError('T has a patch centre with valency != 4')
-            doosabin_.Surface(T)
+# surface
+def surface(T):
+    if is_initial_subdivision_required(T):
+        raise ValueError('T has a patch centre with valency != 4')
+    return doosabin_.Surface(T)
