@@ -44,6 +44,9 @@ class g(object):
     def Rational(a, b):
         return float(a) / b
 
+# The subdivision matrix, extended subdivision matrix, and "bigger" subdivision
+# matrix are all terms from: Stam, "Evaluation of Loop Subdivision Surfaces".
+
 # subdivision_matrix
 def subdivision_matrix(N):
     alpha = g.Rational(5, 8) - (3 + 2 * g.cos(2 * g.pi / N))**2 / 64
@@ -214,6 +217,31 @@ def transform_u_to_subdivided_patch(u):
 
 # recursive_evaluate
 def recursive_evaluate(p, b, N, u, X=None):
+    """Evaluate the basis vector (or point) at a given patch coordinate.
+
+    Parameters
+    ----------
+    p : int
+        The returned vector or point is scaled by `2^p`.
+
+    b : function
+        The basis function (e.g. `triangle_bspline_position_basis`).
+
+    N : int
+        The valency of the extraordinary vertex.
+
+    u : array_like of shape = (2,)
+        The patch coordinate.
+
+    X : optional, array_like of shape = (N + 6, dim)
+        The (optional) matrix of control vertices which define the geometry
+        of the patch.
+
+    Returns
+    -------
+    r : np.ndarray
+        The weight vector if `X = None` else the evaluated point.
+    """
     n, k, u = transform_u_to_subdivided_patch(u)
     if N != 6:
         assert n >= 1, 'n < 1 (= %d)' % n
