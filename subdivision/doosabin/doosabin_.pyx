@@ -44,6 +44,27 @@ cdef extern from 'doosabin_pyx.h':
 
         object UniformParameterisation(int)
 
+_EVALUATE_DOCSTRING = """{symbol}(p, u, X)
+
+Parameters
+----------
+p : int, array_like of shape = (num_points,)
+    A vector of patch indices.
+
+U : float, array_like of shape = (num_points, 2)
+    The matrix of patch coordinates, where each entry (row) corresponds with
+    each entry in `p`.
+
+X : float, array_like of shape = (num_vertices, 3)
+    The matrix of control vertex positions which specify the control mesh
+    geometry.
+
+Returns
+-------
+{symbol} : float, array_like of shape = (num_points, 3)
+    The matrix of evaluated {explanation}.
+"""
+
 cdef class Surface:
     cdef Surface_cpp* _surface
 
@@ -71,30 +92,41 @@ cdef class Surface:
                                    (self.number_of_vertices, 3))
 
             return f(self, p, U, X)
+
+        symbol, explanation = f.__doc__.split(';')
+        wrapped_f.__doc__ = _EVALUATE_DOCSTRING.format(
+            symbol=symbol, explanation=explanation)
+        wrapped_f.__name__ = f.__name__
         return wrapped_f
 
     @__evaluate
     def M(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """M;positions"""
         return self._surface.M(p, U, X)
 
     @__evaluate
     def Mu(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """Mu;first derivatives with respect to `u`"""
         return self._surface.Mu(p, U, X)
 
     @__evaluate
     def Mv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """Mv;first derivatives with respect to `v`"""
         return self._surface.Mv(p, U, X)
 
     @__evaluate
     def Muu(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """Muu;second derivatives with respect to `u`"""
         return self._surface.Muu(p, U, X)
 
     @__evaluate
     def Muv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """Muv;mixed derivatives with respect to `u` and `v`"""
         return self._surface.Muv(p, U, X)
 
     @__evaluate
     def Mvv(self, np.ndarray p, np.ndarray U, np.ndarray X):
+        """Mvv;second derivatives with respect to `v`"""
         return self._surface.Mvv(p, U, X)
 
     # TODO `Mx`.
@@ -102,6 +134,30 @@ cdef class Surface:
     # TODO `Mvx`.
 
     def uniform_parameterisation(self, np.int32_t N):
+        """uniform_parameterisation(N)
+
+        Generate a vector of patch indices `p` and matrix of patch coordinates
+        `U` which parameterise uniformly distributed points on the surface.
+
+        Parameters
+        ----------
+            N : int
+                An integer which controls the number of samples in each patch
+                (and therefore across the entire surface). Each patch
+                contributes `N * N` entries in `p` and `U` (see below).
+
+        Returns
+        -------
+            p : int, np.ndarray of shape = (num_points,)
+                A vector of patch indices.
+
+            U : float, np.ndarray of shape = (num_points, 2)
+                A matrix of patch coordinates.
+
+            T : list of list of ints
+                A list of faces which specifies the connectivity of the surface
+                positions parameterised by `p` and `U`.
+        """
         p, U, T = self._surface.UniformParameterisation(N)
         # Return `T` as a list of list objects.
         return p, U, raw_face_array_to_sequence(map(int, T))
