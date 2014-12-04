@@ -37,7 +37,7 @@ The `Surface` class in [doosabin.h](cpp/doosabin/include/doosabin.h) implements 
 
 To build the test under [cpp/doosabin](cpp/doosabin):
 
-1. Run cmake with an out of source build.
+1. Run CMake with an out of source build.
 2. Set `EIGEN_INCLUDE_DIR` to the full path up to and including eigen3/.
 3. Set `COMMON_CPP_INCLUDE_DIR` to the full path to [rstebbing/common/cpp](https://github.com/rstebbing/common/tree/master/cpp).
 (Add `-std=c++11` to `CMAKE_CXX_FLAGS` if compiling with gcc.)
@@ -52,47 +52,51 @@ To build the Cython extension module and install `subdivision` as a package:
 (Use `export CFLAGS=-std=c++11` beforehand if compiling with gcc.)
 3. Install: `python setup.py install`.
 
-##### Example
-From the [examples](examples) directory and with [rstebbing/common/rscommon](https://github.com/rstebbing/common/tree/master/rscommon) installed:
+To visualise the Doo-Sabin surface defined by a subdivided cube, from the [examples](examples) directory and with [rstebbing/common](https://github.com/rstebbing/common/tree/master) installed:
 ```
 python doosabin/visualise_subdivision.py cube
 ```
-or
+
+More generally, to evaluate points uniformly distributed across a surface defined by the mesh `T` and matrix of control vertices `X`:
 ```
-python doosabin/visualise_subdivision.py doosabin_test
+>>> import doosabin
+>>> surface = doosabin.surface(T)
+>>> pd, Ud, Td = surface.uniform_parameterisation(sample_density)
+>>> M = surface.M(pd, Ud, X)
 ```
+where `sample_density` is a positive integer controlling the number of evaluated points and `M` is the matrix of evaluated points.
 
 ### Verification
 From this directory:
 
 - Evaluate points on an extraordinary patch containing a face with `6` sides and show `2` applications of Doo-Sabin subdivision:
-```
-python verification/doosabin/evaluation.py 6 2
-```
+  ```
+  python verification/doosabin/evaluation.py 6 2
+  ```
 
 - Show the magnitudes of the first and second derivative weight vectors (evaluated numerically) as the position being evaluated tends to the origin:
-```
-python verification/doosabin/derivatives_numeric.py 6 16
-```
+  ```
+  python verification/doosabin/derivatives_numeric.py 6 16
+  ```
 
 - Evaluate the same vectors symbolically:
-```
-python verification/doosabin/derivatives_symbolic.py 6 16
-```
+  ```
+  python verification/doosabin/derivatives_symbolic.py 6 16
+  ```
 
 Loop Subdivision Surfaces
 -------------------------
 ### Verification
 From this directory:
 - Evaluate points on an extraordinary patch containing a vertex with valency `5` and show `2` applications of Loop subdivision:
-```
-python verification/loop/evaluation.py 5 2
-```
+  ```
+  python verification/loop/evaluation.py 5 2
+  ```
 
 - Show the magnitudes of the first and second derivative weight vectors (evaluated numerically) as the position being evaluated tends to the origin:
-```
-python verification/loop/derivatives_numeric.py 5 16
-```
+  ```
+  python verification/loop/derivatives_numeric.py 5 16
+  ```
 
 [1]: http://www.cs.cmu.edu/afs/cs/user/glmiller/public/computational-geometry/15-852-F12/RelatedWork/Loop-by-Stam.pdf
 [2]: http://graphics.cs.ucdavis.edu/education/CAGDNotes/CAGDNotes/Quadratic-B-Spline-Curve-Refinement/Quadratic-B-Spline-Curve-Refinement.html
