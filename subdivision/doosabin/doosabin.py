@@ -60,6 +60,9 @@ def doosabin_weights(N):
     weights[0] = g.Rational(N + 5, 4 * N)
     return weights
 
+# The extended and "bigger" subdivision matrices are all terms from:
+# Stam, "Evaluation of Loop Subdivision Surfaces".
+
 # extended_subdivision_matrix
 def extended_subdivision_matrix(N):
     if N < 3:
@@ -176,6 +179,31 @@ def transform_u_to_subdivided_patch(u):
 
 # recursive_evaluate
 def recursive_evaluate(p, b, N, u, X=None):
+    """Evaluate the basis vector (or point) at a given patch coordinate.
+
+    Parameters
+    ----------
+    p : int
+        The returned vector or point is scaled by `2^p`.
+
+    b : function
+        The basis function (e.g. `biquadratic_bspline_position_basis`).
+
+    N : int
+        The number of sides of the extraordinary face.
+
+    u : array_like of shape = (2,)
+        The patch coordinate.
+
+    X : optional, array_like of shape = (N + 5, dim)
+        The (optional) matrix of control vertices which define the geometry
+        of the patch.
+
+    Returns
+    -------
+    r : np.ndarray
+        The weight vector if `X = None` else the evaluated point.
+    """
     n, k, u = transform_u_to_subdivided_patch(u)
     if N != 4:
         assert n >= 1, 'n < 1 (= %d)' % n
@@ -244,6 +272,12 @@ biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
 
 # raise_if_mesh_is_invalid
 def raise_if_mesh_is_invalid(T):
+    """Check the input mesh `T` and raise a `ValueError` if:
+        any face has fewer than three vertices,
+        vertex indices do not start at 0,
+        vertex indices are not contiguous,
+        faces are not labelled consistently (i.e. half edges are repeated).
+    """
     # Ensure all faces have at least 3 unique integer entries.
     unique_i = set()
     for i, t in enumerate(T):
@@ -286,6 +320,24 @@ def raise_if_mesh_is_invalid(T):
 
 # subdivide
 def subdivide(T, X=None):
+    """Perform one iteration of Doo-Sabin subdivision.
+
+    Parameters
+    ----------
+    T : list of list of ints
+        The list of faces which define the mesh topology.
+
+    X : optional, array_like of shape = (num_vertices, dim)
+        The matrix of control vertex positions.
+
+    Returns
+    -------
+    T : list of list of ints
+        The list of faces which define the subdivided mesh topology.
+
+    X : array_like of shape = (num_subdivided_vertices, dim)
+        The matrix of control vertex positions for the subdivided mesh.
+    """
     raise_if_mesh_is_invalid(T)
 
     # Get necessary topology information about `T`.
@@ -401,6 +453,9 @@ def subdivide(T, X=None):
 
 # is_initial_subdivision_required
 def is_initial_subdivision_required(T):
+    """Return whether or not the input mesh `T` contains a closed vertex
+    (patch centre) with valency != 4 (and thus requires subdivision).
+    """
     raise_if_mesh_is_invalid(T)
 
     vertex_to_half_edges = defaultdict(list)
@@ -427,6 +482,18 @@ def is_initial_subdivision_required(T):
 
 # surface
 def surface(T):
+    """Construct a `Surface` object for an input mesh `T`.
+
+    Parameters
+    ----------
+    T : list of list of ints
+        The list of faces which define the mesh topology.
+
+    Returns
+    -------
+    surface : Surface
+        Doo-Sabin surface object.
+    """
     if is_initial_subdivision_required(T):
         raise ValueError('T requires subdivision')
     return doosabin_.Surface(T)
