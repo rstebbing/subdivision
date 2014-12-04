@@ -345,7 +345,7 @@ def subdivide(T, X=None):
     # Add child faces which occur at patch vertices.
     for i, half_edges in vertex_to_half_edges.items():
         # Check if vertex `i` is a patch vertex.
-        # I.e. all half edges from `i` have opposities which terminate at `i`.
+        # I.e. all half edges from `i` have opposites which terminate at `i`.
         opposite_edges = map(lambda h: half_edge_to_opposite_edge[h],
                              half_edges)
 
@@ -428,5 +428,5 @@ def is_initial_subdivision_required(T):
 # surface
 def surface(T):
     if is_initial_subdivision_required(T):
-        raise ValueError('T has a patch centre with valency != 4')
+        raise ValueError('T requires subdivision')
     return doosabin_.Surface(T)
