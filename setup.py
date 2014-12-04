@@ -48,7 +48,7 @@ setup(name='subdivision',
       author='Richard Stebbing',
       author_email='richie.stebbing@gmail.com',
       license='MIT',
-      url='http://www.whoateallthepy.com',
+      url='https://github.com/rstebbing/subdivision',
       packages=['subdivision'] + modules,
       ext_modules=[
         Extension('subdivision.doosabin.doosabin_',
