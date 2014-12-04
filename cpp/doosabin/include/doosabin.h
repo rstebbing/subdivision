@@ -64,6 +64,19 @@ void DooSabinWeights(int N, Weights* w) {
 }
 
 // BiquadraticBsplineBasis
+// The vertex labelling used for a regular biquadratic B-spline is:
+//   2-------3-------4
+//   |       |       |
+//   |   0   |   1   |
+//   |       |       |
+//   1-------0-------5
+//   |       |       |
+//   |   3   |   2   |
+//   |       |       |
+//   8-------7-------6
+// Face indices are shown internally. The same ordering is also used for the
+// child patches during subdivision. Positive `u` points from face 0 to face 3;
+// positive `v` points from face 0 to face 1.
 const int kNumBiquadraticBsplineBasis = 9;
 const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
                                                                       {1, 0},
@@ -110,6 +123,16 @@ class Patch {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
   typedef Eigen::Matrix<Scalar, 2, 1> Vector2;
 
+  // Patch
+  //
+  // Inputs:
+  //
+  // The single non-default argument is a pointer to a heap allocated
+  // `FaceArray` (`Patch` assumes ownership) which specifies the faces
+  // contributing to the single Doo-Sabin patch. For the `FaceArray` to be
+  // valid, all faces must contain the centre vertex `i`, and must be ordered
+  // similarly so that if half-edge `i,j` is present in one face, then `j,i` is
+  // present in another. Ensuring this is the responsibility of the caller.
   explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
         int depth = 0)
@@ -128,6 +151,36 @@ class Patch {
     }
   }
 
+  // M, Mu, Mv, Muu, Muv, Mvv, Mx, Mux, Mvx
+  //
+  // Inputs:
+  //
+  // `u` is the patch coordinate and must be of a type that supports [] (e.g.
+  // Scalar[2] or Eigen::Matrix<Scalar, 2, 1>). A valid patch coordinate has
+  // 0 <= `u[0]` <= 1 and 0 <= `u[1]` <= 1. Ensuring this is the responsibility
+  // of the caller.
+  //
+  // `X` is the matrix of column vectors which specifies the positions of the
+  // control vertices which define the patch. The number of rows of `X`
+  // determines the number of dimensions of the output. `X` must be of a type
+  // which supports matrix multiplication with Eigen vectors (e.g.
+  // Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>).
+  //
+  // `r` is a pointer to the output vector where the evaluated quantity is
+  // stored and must be an Eigen type which supports .noalias (e.g.
+  // Eigen::Matrix<Scalar, Eigen::Dynamic, 1>). An Eigen::Map type is
+  // also acceptable.
+  //
+  // For `M` and its associated derivatives with respect to `u` and `v`, the
+  // size of `r` is equal to the number of rows of `X` (i.e. the number of
+  // dimensions). This is almost always 3, but may be 2 if evaluation is being
+  // done on a plane.
+  // For derivatives with respect to `X` (e.g. `Mx`) the output vector is of
+  // size `d * d * n`, where `d` is the dimension of the problem and `n` is
+  // the number of vertices in the patch. Entries `r[0]` through to
+  // `r[d * d - 1]` correspond to the flattened (row-major) Jacobian entries
+  // for the first control vertex; entries `r[d * d]` through to
+  // `r[2 * d * d - 1]` to the second, and so on.
   #define EVALUATE(M, F, G, S) \
   template <typename U, typename TX, typename R> \
   inline void M(const U& u, const TX& X, R* r) const { \
@@ -145,10 +198,15 @@ class Patch {
   EVALUATE(Mvx, Position, FirstDerivative, MultiplyAndRepeat<2>);
   #undef EVALUATE
 
+  // vertex_indices
+  // Return the vector of vertex indices which define the patch.
   const std::vector<int>& vertex_indices() const {
     return I_;
   }
 
+  // ordered_face_indices
+  // Return the vector of size 4 which specifies the face indices ordered
+  // as defined at `BiquadraticBsplineBasis`.
   const std::vector<int>& ordered_face_indices() const {
     return ordered_face_indices_;
   }
@@ -539,13 +597,34 @@ class Surface {
   typedef typename Patch::Vector Vector;
   typedef typename Patch::Vector2 Vector2;
 
-  // Copy of `control_mesh` is required since mutable routines (e.g.
-  // `EnsureVertices`) are used.
+  // Surface
+  //
+  // Inputs:
+  //
+  // `control_mesh` is a reference to a `GeneralMesh` which defines the
+  // mesh topology of the surface of interest.
+  // For `control_mesh` to be valid, vertex labelling must be contiguous and
+  // start from 0. All faces must be labelled similarly so that no half edge
+  // is repeated. Also, all closed vertices --- vertices which have an
+  // "incoming" half edge for each "outgoing" half edge --- must have valency
+  // four. Ensuring this is the responsibility of the caller.
+  //
+  // (A copy of `control_mesh` is required since mutable routines (e.g.
+  // `EnsureVertices`) are used.)
   explicit Surface(const GeneralMesh& control_mesh)
       : control_mesh_(control_mesh) {
     Initialise();
   }
 
+  // M, Mu, Mv, Muu, Muv, Mvv, Mx, Mux, Mvx
+  //
+  // Inputs:
+  //
+  // All input arguments are identical to those for the corresponding methods
+  // defined under `Patch`. The only difference is the additional argument `p`.
+  //
+  // `p` is a patch index, where 0 <= `p` < `number_of_patches()`. Ensuring
+  // this condition is the responsibility of the caller.
   #define EVALUATE(M) \
   template <typename U, typename TX, typename R> \
   inline void M(int p, const U& u, const TX& X, R* r) const { \
@@ -562,6 +641,25 @@ class Surface {
   EVALUATE(Mvx);
   #undef EVALUATE
 
+  // UniformParameterisation
+  // Set a vector of patch indices `p` and matrix of patch coordinates `U`
+  // which parameterise uniformly distributed points on the surface. Also
+  // (optionally) set a vector which describes the connectivity of the
+  // points (as a raw face array).
+  //
+  // Inputs:
+  //
+  // `N` is an integer which controls the number of samples in each patch
+  // (and therefore across the entire surface). Each patch contributes
+  // `N * N` entries in `p` and `U`.
+  //
+  // `p` is a pointer to a vector type which supports [] and .resize.
+  //
+  // `U` is a pointer to an Eigen matrix type (e.g.
+  // Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>).
+  //
+  // `T` is an (optional) pointer to a `std::vector<int>` which is filled
+  // with a raw face array describing the connectivity of the points.
   template <typename P, typename TU>
   void UniformParameterisation(int N, P* p, TU* U,
                                std::vector<int>* T = nullptr) const {
@@ -698,22 +796,36 @@ class Surface {
     }
   }
 
+  // number_of_vertices
+  // Return the number of vertices in the control mesh.
   inline int number_of_vertices() const {
     return control_mesh_.number_of_vertices();
   }
 
+  // number_of_faces
+  // Return the number of faces in the control mesh.
   inline int number_of_faces() const {
     return control_mesh_.number_of_faces();
   }
 
+  // number_of_patches
+  // Return the number of patches in the control mesh.
   inline int number_of_patches() const {
     return static_cast<int>(patch_vertex_indices_.size());
   }
 
+  // patch_vertex_indices
+  // Return the vector of vertex indices which define the patch `p`.
+  // The condition `0 <= p < number_of_patches()` must hold and is the
+  // responsibility of the caller.
   inline const std::vector<int>& patch_vertex_indices(int p) const {
     return patches_[p]->vertex_indices();
   }
 
+  // adjacent_patch_indices
+  // Return the vector of patch indices which are adjacent to patch `p`.
+  // The condition `0 <= p < number_of_patches()` must hold and is the
+  // responsibility of the caller.
   inline const std::vector<int>& adjacent_patch_indices(int p) const {
     return adjacent_patch_indices_[p];
   }
@@ -725,7 +837,7 @@ class Surface {
   }
 
   void InitialisePatchIndices() {
-    // FIXME This is assuming contiguous vertex labelling starting at 0.
+    // NOTE This is assuming contiguous vertex labelling starting at 0.
     control_mesh_.EnsureVertices();
     auto& vertices = control_mesh_.vertices();
     vertex_to_patch_index_.resize(vertices.size());
@@ -810,9 +922,37 @@ class SurfaceWalker {
   typedef typename Surface::Vector2 Vector2;
 
  public:
+  // SurfaceWalker
+  //
+  // Inputs:
+  //
+  // `surface` is a `const` pointer to a `Surface` instance --- ownership is
+  // not taken by `SurfaceWalker`.
   SurfaceWalker(const Surface* surface)
     : surface_(surface) {}
 
+  // ApplyUpdate
+  // From patch `p` at coordinate `u` apply update `delta` by "walking"
+  // across the surface. The final patch index and coordinate are stored in
+  // `p1` and `u1` respectively.
+  //
+  // Inputs:
+  //
+  // `X` is the matrix of column vectors which specifies the positions of the
+  // control vertices which define the patch. The number of rows of `X` must
+  // be 3 and it must be an Eigen matrix type.
+  //
+  // `p` is the current patch index.
+  //
+  // `u` is the current patch coordinate and must be of a type that
+  // supports [].
+  //
+  // `delta` is the applied update and must be of a type that supports [].
+  //
+  // `p1` is a pointer to an integer which stores the output patch index.
+  //
+  // `u1` is a pointer to the object which stores the output patch coordinate.
+  // Its type must support [].
   template <typename TX, typename U, typename Delta, typename U1>
   bool ApplyUpdate(const TX& X, const int p, const U& u, const Delta& delta,
                    int* p1, U1* u1) const {
