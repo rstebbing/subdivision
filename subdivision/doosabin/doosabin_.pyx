@@ -11,11 +11,11 @@ import numpy as np
 cimport numpy as np
 np.import_array()
 
-# Requires common/python on `PYTHONPATH`.
-from argcheck import check_ndarray_or_raise, check_type_or_raise
-from itertools_ import pairwise
-from face_array import (raw_face_array_to_sequence,
-                        sequence_to_raw_face_array)
+# Requires `rscommon`.
+from rscommon.argcheck import check_ndarray_or_raise, check_type_or_raise
+from rscommon.itertools_ import pairwise
+from rscommon.face_array import (raw_face_array_to_sequence,
+                                 sequence_to_raw_face_array)
 
 # Type
 ctypedef np.float64_t DTYPE_t

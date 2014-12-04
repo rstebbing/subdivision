@@ -10,8 +10,8 @@
 import numpy as np
 from collections import defaultdict
 
-# Requires common/python on `PYTHONPATH`.
-from itertools_ import count, pairwise
+# Requires `rscommon`.
+from rscommon.itertools_ import count, pairwise
 
 # `doosabin_` doesn't need to be available.
 try:

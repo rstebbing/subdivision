@@ -12,8 +12,8 @@ import numpy as np
 
 from subdivision import doosabin
 
-# Requires common/python on `PYTHONPATH`.
-import vtk_
+# Requires `rscommon`.
+from rscommon import vtk_
 
 # EXAMPLES
 EXAMPLES = {

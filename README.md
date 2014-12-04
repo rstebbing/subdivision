@@ -53,7 +53,7 @@ To build the Cython extension module and install `subdivision` as a package:
 3. Install: `python setup.py install`.
 
 ##### Example
-From the [examples](examples) directory and with [rstebbing/common/python](https://github.com/rstebbing/common/tree/master/python) on `PYTHONPATH`:
+From the [examples](examples) directory and with [rstebbing/common/rscommon](https://github.com/rstebbing/common/tree/master/rscommon) installed:
 ```
 python doosabin/visualise_subdivision.py cube
 ```

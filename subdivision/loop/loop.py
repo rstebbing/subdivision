@@ -13,8 +13,8 @@ import sympy as sp
 from functools import partial
 from operator import add, mul
 
-# Requires common/python on `PYTHONPATH`.
-from sympy_ import sympy_polynomial_to_function
+# Requires `rscommon`.
+from rscommon.sympy_ import sympy_polynomial_to_function
 
 # __all__.
 __all__ = ['g',

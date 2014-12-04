@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 from subdivision import doosabin
 from common import example_extraordinary_patch
 
-# Requires common/python on `PYTHONPATH`.
-from matplotlib_ import label_xaxis
+# Requires `rscommon`.
+from rscommon.matplotlib_ import set_xaxis_ticks
 
 # main
 def main():
@@ -67,7 +67,7 @@ def main():
         ax.plot(norms, 'o-')
         for i, n in enumerate(norms):
             ax.text(i, n, '$%.3e$' % n, horizontalalignment='center')
-        label_xaxis(ax, ['$2^{%d}$' % (-(i + 1)) for i in range(args.n)])
+        set_xaxis_ticks(ax, ['$2^{%d}$' % (-(i + 1)) for i in range(args.n)])
         ax.set_yticks([])
 
     axs[0].set_title(r'$N = %d\;|\partial u|$' % args.N)
