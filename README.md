@@ -45,7 +45,7 @@ To build the test under [cpp/doosabin](cpp/doosabin):
 5. Build.
 
 #### Python
-To build the Cython extension module and install `subdivision` as a package:
+To build the Cython extension module and install `subdivision` as a package (either globally or under a [virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs)):
 
 1. Set `EIGEN_INCLUDE` and `COMMON_CPP_INCLUDE` in site.cfg.
 2. Build the Python package: `python setup.py build`.
