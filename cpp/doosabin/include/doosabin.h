@@ -136,9 +136,9 @@ class Patch {
   explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
         int depth = 0)
-      : parent_(parent),
-        depth_(depth),
-        face_array_(face_array) {
+      : face_array_(face_array),
+        parent_(parent),
+        depth_(depth) {
     Initialise();
     if (depth_ == 0) {
       // Required by `GetFaceIndexOfFace`.
@@ -416,7 +416,7 @@ class Patch {
       // NOTE `Subdivide` is only called in `Initialise` for `depth_ = 0` so
       // this is all OK.
       child->S_.resize(child->I_.size(), S.cols());
-      for (int i = 0; i < child->I_.size(); ++i) {
+      for (std::vector<int>::size_type i = 0; i < child->I_.size(); ++i) {
         child->S_.row(i) = S.row(child->I_[i]);
       }
       if (!child->is_valid_ && child->depth_ < kMaxSubdivisionDepth) {
@@ -460,7 +460,7 @@ class Patch {
   void AdjustUForValidChild(Vector2* u) const {
     assert(children_.size() > 0);
 
-    for (int i = 0; i < children_.size(); ++i) {
+    for (std::vector<int>::size_type i = 0; i < children_.size(); ++i) {
       if (children_[i]->is_valid_) {
         (*u)[0] = Scalar(0.5) + kValidUOffsets[i][0] * Scalar(kUEps);
         (*u)[1] = Scalar(0.5) + kValidUOffsets[i][1] * Scalar(kUEps);
