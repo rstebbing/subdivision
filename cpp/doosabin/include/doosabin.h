@@ -30,8 +30,9 @@ namespace doosabin {
 
 // Constants.
 
-// `kMaxSubdivisionDepth` and `kUEps` set the subdivision limit and
-// adjustment to coordinates on the penultimate subdivision level.
+// `kMaxSubdivisionDepth` is the maximum number of subdivision "levels".
+// `kUEps` is the adjustment made to patch coordinates on the penultimate
+// subdivision level.
 static const int kMaxSubdivisionDepth = 10;
 static const double kUEps = 1e-6;
 
@@ -74,9 +75,9 @@ void DooSabinWeights(int N, Weights* w) {
 //   |   3   |   2   |
 //   |       |       |
 //   8-------7-------6
-// Face indices are shown internally. The same ordering is also used for the
-// child patches during subdivision. Positive `u` points from face 0 to face 3;
-// positive `v` points from face 0 to face 1.
+// where face indices are shown internally. The same ordering is also used for
+// the child patches during subdivision. Positive `u` points from face 0 to
+// face 3; positive `v` points from face 0 to face 1.
 const int kNumBiquadraticBsplineBasis = 9;
 const int kBiquadraticBsplineBasis[kNumBiquadraticBsplineBasis][2] = {{1, 1},
                                                                       {1, 0},
@@ -131,8 +132,8 @@ class Patch {
   // `FaceArray` (`Patch` assumes ownership) which specifies the faces
   // contributing to the single Doo-Sabin patch. For the `FaceArray` to be
   // valid, all faces must contain the centre vertex `i`, and must be ordered
-  // similarly so that if half-edge `i,j` is present in one face, then `j,i` is
-  // present in another. Ensuring this is the responsibility of the caller.
+  // similarly so that if half edge `i, j` is present in one face, then `j, i`
+  // is present in another. Ensuring this is the responsibility of the caller.
   explicit Patch(FaceArray* face_array,
         const Patch* parent = nullptr,
         int depth = 0)
@@ -176,11 +177,11 @@ class Patch {
   // dimensions). This is almost always 3, but may be 2 if evaluation is being
   // done on a plane.
   // For derivatives with respect to `X` (e.g. `Mx`) the output vector is of
-  // size `d * d * n`, where `d` is the dimension of the problem and `n` is
+  // size `d * d * n`, where `d` is the number of rows of `X`, and `n` is
   // the number of vertices in the patch. Entries `r[0]` through to
   // `r[d * d - 1]` correspond to the flattened (row-major) Jacobian entries
   // for the first control vertex; entries `r[d * d]` through to
-  // `r[2 * d * d - 1]` to the second, and so on.
+  // `r[2 * d * d - 1]` correspond to the second, and so on.
   #define EVALUATE(M, F, G, S) \
   template <typename U, typename TX, typename R> \
   inline void M(const U& u, const TX& X, R* r) const { \
@@ -205,8 +206,9 @@ class Patch {
   }
 
   // ordered_face_indices
-  // Return the vector of size 4 which specifies the face indices ordered
-  // as defined at `BiquadraticBsplineBasis`.
+  // Return a vector of size 4 which, at index `i`, specifies the input face
+  // index corresponding to face index `i` as defined above at
+  // `BiquadraticBsplineBasis`.
   const std::vector<int>& ordered_face_indices() const {
     return ordered_face_indices_;
   }
@@ -603,9 +605,9 @@ class Surface {
   //
   // `control_mesh` is a reference to a `GeneralMesh` which defines the
   // mesh topology of the surface of interest.
-  // For `control_mesh` to be valid, vertex labelling must be contiguous and
-  // start from 0. All faces must be labelled similarly so that no half edge
-  // is repeated. Also, all closed vertices --- vertices which have an
+  // For `control_mesh` to be valid: vertex labelling must be contiguous and
+  // start from 0; all faces must be labelled similarly so that no half edge
+  // is repeated, and all closed vertices --- vertices which have an
   // "incoming" half edge for each "outgoing" half edge --- must have valency
   // four. Ensuring this is the responsibility of the caller.
   //
@@ -926,8 +928,8 @@ class SurfaceWalker {
   //
   // Inputs:
   //
-  // `surface` is a `const` pointer to a `Surface` instance --- ownership is
-  // not taken by `SurfaceWalker`.
+  // `surface` is a `const` pointer to a `SurfaceType` instance --- ownership
+  // is not taken by `SurfaceWalker`.
   SurfaceWalker(const SurfaceType* surface)
     : surface_(surface) {}
 
