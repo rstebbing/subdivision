@@ -52,8 +52,7 @@ p : int, array_like of shape = (num_points,)
     A vector of patch indices.
 
 U : float, array_like of shape = (num_points, 2)
-    The matrix of patch coordinates, where each entry (row) corresponds with
-    each entry in `p`.
+    The matrix of patch coordinates.
 
 X : float, array_like of shape = (num_vertices, 3)
     The matrix of control vertex positions which specify the control mesh
