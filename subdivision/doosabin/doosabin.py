@@ -273,9 +273,9 @@ biquadratic_bspline_dv_dv_basis = biquadratic_bspline_basis(
 # raise_if_mesh_is_invalid
 def raise_if_mesh_is_invalid(T):
     """Check the input mesh `T` and raise a `ValueError` if:
-        any face has fewer than three vertices,
-        vertex indices do not start at 0,
-        vertex indices are not contiguous,
+        any face has fewer than three vertices, or
+        vertex indices do not start at 0, or
+        vertex indices are not contiguous, or
         faces are not labelled consistently (i.e. half edges are repeated).
     """
     # Ensure all faces have at least 3 unique integer entries.
