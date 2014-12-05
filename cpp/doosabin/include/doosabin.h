@@ -502,8 +502,8 @@ class Patch {
     // Define `MatrixVectorMultiply` to facilitate non-Eigen type
     // `MatrixOfColumnPointers` for `TX`.
     // TODO Add `MatrixOfColumnPointers` as an Eigen extension.
-    template <typename S, typename B, typename TX, typename R>
-    inline void operator()(int depth, const S& S, const B& b, const TX& X,
+    template <typename TS, typename B, typename TX, typename R>
+    inline void operator()(int depth, const TS& S, const B& b, const TX& X,
                            R* r) const {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
@@ -538,8 +538,8 @@ class Patch {
   template <int Exponent>
   class MultiplyAndRepeat {
    public:
-    template <typename S, typename B, typename TX, typename R>
-    inline void operator()(int depth, const S& S, const B& b, const TX& X,
+    template <typename TS, typename B, typename TX, typename R>
+    inline void operator()(int depth, const TS& S, const B& b, const TX& X,
                            R* r) const {
       if (S.cols() <= kMaxNNoAlloc) {
         Scalar St_b_data[kMaxNNoAlloc];
@@ -552,8 +552,8 @@ class Patch {
     }
 
    private:
-    template <typename S, typename B, typename STB, typename R>
-    inline void DoMultiplyAndRepeat(int depth, const S& S, const B& b,
+    template <typename TS, typename B, typename STB, typename R>
+    inline void DoMultiplyAndRepeat(int depth, const TS& S, const B& b,
                                     STB* St_b, typename STB::Index d,
                                     R* r) const {
       St_b->noalias() = S.transpose() * b;
@@ -592,10 +592,10 @@ class Patch {
 template <typename Scalar>
 class Surface {
  public:
-  typedef Patch<Scalar> Patch;
-  typedef typename Patch::Matrix Matrix;
-  typedef typename Patch::Vector Vector;
-  typedef typename Patch::Vector2 Vector2;
+  typedef Patch<Scalar> PatchType;
+  typedef typename PatchType::Matrix Matrix;
+  typedef typename PatchType::Vector Vector;
+  typedef typename PatchType::Vector2 Vector2;
 
   // Surface
   //
@@ -663,7 +663,7 @@ class Surface {
   template <typename P, typename TU>
   void UniformParameterisation(int N, P* p, TU* U,
                                std::vector<int>* T = nullptr) const {
-    typedef std::decay<decltype((*p)[0])>::type PatchIndex;
+    typedef typename std::decay<decltype((*p)[0])>::type PatchIndex;
 
     // Ensure `N >= 1`.
     N = std::max(N, 1);
@@ -862,7 +862,7 @@ class Surface {
     for (int i : patch_vertex_indices_) {
       // Initialise `patch`.
       std::vector<int> face_indices = control_mesh_.FacesAtVertex(i);
-      auto patch = new Patch(new FaceArray(control_mesh_.Faces(face_indices)));
+      auto patch = new PatchType(new FaceArray(control_mesh_.Faces(face_indices)));
 
       // Get the permuted face indices.
       std::vector<int> permuted_face_indices;
@@ -910,16 +910,16 @@ class Surface {
   std::vector<int> patch_vertex_indices_;
   std::vector<int> vertex_to_patch_index_;
   std::vector<std::vector<int>> adjacent_patch_indices_;
-  std::vector<std::unique_ptr<Patch>> patches_;
+  std::vector<std::unique_ptr<PatchType>> patches_;
 };
 
 // SurfaceWalker
 template <typename Scalar>
 class SurfaceWalker {
-  typedef Surface<Scalar> Surface;
-  typedef typename Surface::Matrix Matrix;
-  typedef typename Surface::Vector Vector;
-  typedef typename Surface::Vector2 Vector2;
+  typedef Surface<Scalar> SurfaceType;
+  typedef typename SurfaceType::Matrix Matrix;
+  typedef typename SurfaceType::Vector Vector;
+  typedef typename SurfaceType::Vector2 Vector2;
 
  public:
   // SurfaceWalker
@@ -928,7 +928,7 @@ class SurfaceWalker {
   //
   // `surface` is a `const` pointer to a `Surface` instance --- ownership is
   // not taken by `SurfaceWalker`.
-  SurfaceWalker(const Surface* surface)
+  SurfaceWalker(const SurfaceType* surface)
     : surface_(surface) {}
 
   // ApplyUpdate
@@ -1124,7 +1124,7 @@ class SurfaceWalker {
   }
 
  private:
-  const Surface* surface_;
+  const SurfaceType* surface_;
 };
 
 } // namespace doosabin
