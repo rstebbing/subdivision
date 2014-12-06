@@ -3,6 +3,19 @@ subdivision
 
 ![Doo-Sabin subdivision](https://github.com/rstebbing/subdivision/raw/master/README.png)
 
+Subdivision surfaces enable modelling of smooth surfaces using _only_ a coarse control mesh.
+For example, the blue _Doo-Sabin_ surface above is defined entirely by the positions of the 14 control vertices (gray).
+In fact, it is actually the surface "discovered" by repeatedly refining (_subdividing_) the control mesh (left to right).
+
+The primary purpose of this repository is to enable straightforward use of subdivision surfaces by providing the code required for fast and exact evaluation of surface points and derivatives.
+Currently, only the code for Doo-Sabin subdivision surfaces is available, but the code for Loop subdivision surfaces will be added in due course.
+
+Author: Richard Stebbing
+
+License: MIT (refer to LICENSE).
+
+Background
+----------
 [Uniform quadratic B-splines][2] define smooth curves which are parameterised by a finite number of control vertices.
 [Biquadratic B-splines][3] and [quadratic triangle B-splines][1] are generalisations which define surfaces, where the influence of each control vertex is specified by its index in a _regular_ quadrilateral or triangle mesh.
 For general meshes containing _irregularities_ (e.g. non-quadrilateral faces, vertices with valency not equal to four/six) biquadratic and triangle B-splines cannot be applied directly.
@@ -10,13 +23,7 @@ Instead, _subdivision_ is necessary to refine the control mesh to "uncover" regu
 To this end, the [Doo-Sabin][5] algorithm generalises biquadratic B-splines to general meshes, and the [Loop][4] subdivision algorithm generalises quadratic triangle B-splines to irregular triangle meshes.
 
 Unlike their regular counterparts, evaluating positions and derivatives on Loop and Doo-Sabin subdivisions surfaces is more involved.
-The purpose of this repository is to provide the code necessary to (a) understand subdivision surface evaluation, (b) enable straightforward adoption and evaluation of subdivision surfaces, and (c) verify properties of the first and second derivatives for each surface type.
-
-The code for fast evaluation of points and derivatives for Loop subdivision surfaces is not currently available but will be added in due course.
-
-Author: Richard Stebbing
-
-License: MIT (refer to LICENSE).
+This repository provides the code necessary to (a) understand subdivision surface evaluation, (b) enable straightforward adoption and evaluation of subdivision surfaces, and (c) verify properties of the first and second derivatives for each surface type.
 
 Dependencies
 ------------
