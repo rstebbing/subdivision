@@ -60,7 +60,7 @@ X : float, array_like of shape = (num_vertices, 3)
 
 Returns
 -------
-{symbol} : float, array_like of shape = (num_points, 3)
+{symbol} : float, np.ndarray of shape = (num_points, 3)
     The matrix of evaluated {explanation}.
 """
 
