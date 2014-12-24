@@ -140,22 +140,22 @@ cdef class Surface:
 
         Parameters
         ----------
-            N : int
-                An integer which controls the number of samples in each patch
-                (and therefore across the entire surface). Each patch
-                contributes `N * N` entries in `p` and `U` (see below).
+        N : int
+            An integer which controls the number of samples in each patch
+            (and therefore across the entire surface). Each patch
+            contributes `N * N` entries in `p` and `U` (see below).
 
         Returns
         -------
-            p : int, np.ndarray of shape = (num_points,)
-                A vector of patch indices.
+        p : int, np.ndarray of shape = (num_points,)
+            A vector of patch indices.
 
-            U : float, np.ndarray of shape = (num_points, 2)
-                A matrix of patch coordinates.
+        U : float, np.ndarray of shape = (num_points, 2)
+            A matrix of patch coordinates.
 
-            T : list of list of ints
-                A list of faces which specifies the connectivity of the surface
-                positions parameterised by `p` and `U`.
+        T : list of list of ints
+            A list of faces which specifies the connectivity of the surface
+            positions parameterised by `p` and `U`.
         """
         p, U, T = self._surface.UniformParameterisation(N)
         # Return `T` as a list of list objects.
