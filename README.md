@@ -30,7 +30,9 @@ Dependencies
 Core:
 * [Eigen 3][6]
 * [rstebbing/common][7]
+* Cython
 * Numpy
+* Sympy
 
 Visualisation:
 * matplotlib
