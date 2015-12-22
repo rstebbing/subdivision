@@ -13,6 +13,8 @@ namespace uniform_quadratic_bspline {
 
 // Position
 struct Position {
+  Position() {}
+
   template <typename T>
   inline T operator()(const T& u, int k) const {
     switch (k) {
@@ -35,6 +37,8 @@ struct Position {
 
 // FirstDerivative
 struct FirstDerivative {
+  FirstDerivative() {}
+
   template <typename T>
   inline T operator()(const T& u, int k) const {
     switch (k) {
@@ -57,6 +61,8 @@ struct FirstDerivative {
 
 // SecondDerivative
 struct SecondDerivative {
+  SecondDerivative() {}
+
   template <typename T>
   inline T operator()(const T&, int k) const {
     switch (k) {

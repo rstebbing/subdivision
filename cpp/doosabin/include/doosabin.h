@@ -501,6 +501,8 @@ class Patch {
   template <int Exponent>
   class MultiplyAndScale {
    public:
+    MultiplyAndScale() {}
+
     // Define `MatrixVectorMultiply` to facilitate non-Eigen type
     // `MatrixOfColumnPointers` for `TX`.
     // TODO Add `MatrixOfColumnPointers` as an Eigen extension.
@@ -540,6 +542,8 @@ class Patch {
   template <int Exponent>
   class MultiplyAndRepeat {
    public:
+    MultiplyAndRepeat() {}
+
     template <typename TS, typename B, typename TX, typename R>
     inline void operator()(int depth, const TS& S, const B& b, const TX& X,
                            R* r) const {
