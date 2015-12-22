@@ -121,7 +121,7 @@ class Surface {
     });
 
     // Allocate output array `R`.
-    npy_intp dims[2] = {argsort_p.size(), 3};
+    npy_intp dims[2] = {static_cast<npy_intp>(argsort_p.size()), 3};
     PyArrayObject* npy_R = (PyArrayObject*)PyArray_EMPTY(
       2, dims, NPY_FLOAT64, 0);
 
