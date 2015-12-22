@@ -455,7 +455,7 @@ class Patch {
       }
 
       // Get child and translate `u` for child patch.
-      children_[PassToChild(u)]->EvaluateInternal<F, G, E>(u, X, r);
+      children_[PassToChild(u)]->template EvaluateInternal<F, G, E>(u, X, r);
     }
   }
 
